@@ -1,0 +1,20 @@
+# 通知のテスト。.github/notify-test を更新して push すると、スマホにテスト通知を送る。
+name: notify-test
+
+on:
+  push:
+    branches: [main]
+    paths: [".github/notify-test"]
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    env:
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: テスト通知を送る
+        run: |
+          test -n "$NTFY_TOPIC" || { echo "NTFY_TOPIC が登録されていません"; exit 1; }
+          python3 -m bot.notify "✅ GitHub からのテスト通知です。明日から、仮想の売買の結果がここに届きます。"
