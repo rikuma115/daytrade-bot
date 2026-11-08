@@ -38,13 +38,16 @@ jobs:
       - name: 終了時刻を決める
         id: t
         run: |
-          if [ -n "${{ github.event.inputs.until }}" ]; then echo "until=${{ github.event.inputs.until }}" >> "$GITHUB_OUTPUT";
-          elif [ "$(date +%H)" -lt 12 ]; then echo "until=11:35" >> "$GITHUB_OUTPUT";
-          else echo "until=15:40" >> "$GITHUB_OUTPUT"; fi
+          if [ -n "${{ github.event.inputs.until }}" ]; then u="${{ github.event.inputs.until }}";
+          elif [ "$(date +%H)" -lt 12 ]; then u="11:35";
+          else u="15:40"; fi
+          echo "until=$u" >> "$GITHUB_OUTPUT"
+          # 後場の実行かどうか（文字列の時刻は式の中で大小比較できないので、ここで判定する）
+          if [[ "$u" > "15:30" ]]; then echo "after_close=true" >> "$GITHUB_OUTPUT"; else echo "after_close=false" >> "$GITHUB_OUTPUT"; fi
       - name: ボットを動かす
         run: python -m bot.run live --until "${{ steps.t.outputs.until }}"
       - name: 株価データを貯める（後場のあと）
-        if: always() && steps.t.outputs.until >= '15:31'
+        if: always() && steps.t.outputs.after_close == 'true'
         run: python data.py || true
       - name: 状態と記録を保存
         if: always()
@@ -56,4 +59,5 @@ jobs:
           for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
       - name: 失敗したら通知
         if: failure()
-        run: python -m bot.notify "🚨 ボットの実行が失敗しました。GitHub の Actions 画面で確認してください。"
+        run: |
+          python -m bot.notify "🚨 ボットの実行が失敗しました。GitHub の Actions 画面で確認してください。"
