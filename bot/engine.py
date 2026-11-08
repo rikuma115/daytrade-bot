@@ -103,20 +103,29 @@ class Engine:
         tmp.replace(self.state_file)
 
     def _affordable(self, tickers):
-        """100株を買える銘柄だけ残す（直近の終値で判定）。"""
+        """売買できる銘柄だけ残す（直近60日の保存データで判定）:
+        売買代金が十分 / 資金で100株買える / 損切りに掛かっても1回の損失の上限に収まる。"""
         from data import load
-        out = []
+        stop = getattr(self.strategy, "stop", None) or 0.01
+        out, skipped = [], {}
         for t in tickers:
             try:
-                last = float(load(t)["Close"].iloc[-1])
+                d = load(t)
+                last = float(d["Close"].iloc[-1])
+                turnover = float((d["Close"] * d["Volume"]).groupby(d.index.date).sum().tail(20).mean())
             except Exception:  # noqa: BLE001
-                out.append(t)
+                skipped[t] = "データなし"
                 continue
-            if last * risk.LOT <= self.cfg.capital:
+            if turnover < self.cfg.min_turnover:
+                skipped[t] = "売買代金が少ない"
+            elif last * risk.LOT > self.cfg.capital:
+                skipped[t] = "100株を買う資金が足りない"
+            elif last * stop * risk.LOT > self.cfg.max_loss_per_trade:
+                skipped[t] = "損切りに掛かると1回の損失の上限を超える"
+            else:
                 out.append(t)
-        skipped = sorted(set(tickers) - set(out))
         if skipped:
-            self.journal.event("universe", skipped=skipped, reason="100株を買う資金が足りない")
+            self.journal.event("universe", trade=len(out), skipped=skipped)
         return out
 
     def _label(self, t):

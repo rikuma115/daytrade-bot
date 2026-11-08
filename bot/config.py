@@ -24,6 +24,7 @@ class Config:
     tm_block_above: float
     tm_replays: int
     tickers: list
+    min_turnover: float
     notify_on_trade: bool
     notify_on_summary: bool
     raw: dict = field(repr=False, default_factory=dict)
@@ -31,6 +32,13 @@ class Config:
     @property
     def allow_short(self) -> bool:
         return self.account == "margin"
+
+
+def _tickers(v):
+    if v == "auto":
+        from data import UNIVERSE
+        return list(UNIVERSE)
+    return list(v)
 
 
 def load(path: str | Path = ROOT / "config.toml") -> Config:
@@ -45,7 +53,8 @@ def load(path: str | Path = ROOT / "config.toml") -> Config:
         strategy=s["name"], strategy_params=s.get("params", {}),
         tm_enabled=bool(tm.get("enabled", True)), tm_block_above=float(tm.get("block_if_stop_first_above", 1.0)),
         tm_replays=int(tm.get("replays", 2000)),
-        tickers=list(u["tickers"]),
+        tickers=_tickers(u.get("tickers", "auto")),
+        min_turnover=float(u.get("min_turnover", 3e9)),
         notify_on_trade=bool(n.get("on_trade", True)), notify_on_summary=bool(n.get("on_daily_summary", True)),
         raw=c,
     )
