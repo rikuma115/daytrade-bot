@@ -1,0 +1,22 @@
+# Claude が朝の注目銘柄（picks/<日付>.json）を保存したら、スマホに通知する。
+name: picks-notify
+
+on:
+  push:
+    branches: [main]
+    paths: ["picks/20*.json"]
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    env:
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: 新しく保存された日の分を通知する
+        run: |
+          for f in $(git diff --name-only HEAD~1 HEAD -- 'picks/20*.json'); do
+            python3 -m morning.picks notify "$f"
+          done

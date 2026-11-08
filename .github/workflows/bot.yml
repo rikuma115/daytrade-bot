@@ -49,12 +49,17 @@ jobs:
       - name: 株価データを貯める（後場のあと）
         if: always() && steps.t.outputs.after_close == 'true'
         run: python data.py || true
+      - name: Claudeの注目銘柄の成績を集計して通知（後場のあと）
+        if: always() && steps.t.outputs.after_close == 'true'
+        run: |
+          msg=$(python -m morning.picks evaluate 2>/dev/null | grep -v "^$" || true)
+          if [ -n "$msg" ] && ls picks/20*.json >/dev/null 2>&1; then python -m bot.notify "$msg"; fi
       - name: 状態と記録を保存
         if: always()
         run: |
           git config user.name "daytrade-bot"
           git config user.email "daytrade-bot@users.noreply.github.com"
-          git add logs state data || true
+          git add logs state data picks || true
           git diff --cached --quiet || git commit -m "bot: $(date '+%Y-%m-%d %H:%M') の記録"
           for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
       - name: 失敗したら通知
