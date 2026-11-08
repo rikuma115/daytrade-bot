@@ -1,0 +1,88 @@
+//@version=6
+// デイトレ検証用: 移動平均クロス / トレンド追随（Python 版 backtest.py と同じ考え方）
+// 使い方: 日本株の5分足チャートに追加 → 下の「ストラテジーテスター」で成績を見る
+strategy("デイトレ検証 トレンド追随", overlay = true,
+     initial_capital = 1000000,
+     default_qty_type = strategy.percent_of_equity, default_qty_value = 100,
+     commission_type = strategy.commission.percent, commission_value = 0.05,  // 価格ズレ 片道0.05% の代わり
+     pyramiding = 0)
+
+// ---------- 設定（チャート上の歯車アイコンから変更できる）
+fastLen    = input.int(9, "短期EMA")
+slowLen    = input.int(26, "長期EMA")
+useVwap    = input.bool(true, "VWAP の向きと一致したときだけ入る")
+allowShort = input.bool(false, "空売りも行う（信用口座が必要）")
+stopPct    = input.float(0.8, "当初の損切り幅 (%)", step = 0.1)
+trailPct   = input.float(1.0, "トレーリング幅 (%)", step = 0.1)
+exitOnCross = input.bool(false, "反対のクロスで決済する（移動平均クロス版）")
+maxTrades  = input.int(1, "1日の最大取引回数", minval = 1)
+entrySess  = input.session("0930-1300", "新規エントリーの時間帯")
+exitSess   = input.session("1515-1530", "強制決済の時間帯（この足の確定で決済）")
+
+tz = "Asia/Tokyo"
+inEntry = not na(time(timeframe.period, entrySess, tz))
+inExit  = not na(time(timeframe.period, exitSess, tz))
+newDay  = timeframe.change("D")
+
+// ---------- 指標（Python 版と同じく、EMA は毎日リセットして当日の足だけで計算）
+var float emaF = na
+var float emaS = na
+aF = 2.0 / (fastLen + 1)
+aS = 2.0 / (slowLen + 1)
+emaF := newDay or na(emaF) ? close : emaF + aF * (close - emaF)
+emaS := newDay or na(emaS) ? close : emaS + aS * (close - emaS)
+vwap = ta.vwap(hlc3)
+
+crossUp = emaF[1] <= emaS[1] and emaF > emaS and not newDay
+crossDn = emaF[1] >= emaS[1] and emaF < emaS and not newDay
+
+// ---------- 1日の取引回数を数える
+var int tradesToday = 0
+if newDay
+    tradesToday := 0
+
+flat = strategy.position_size == 0
+canEnter = flat and inEntry and tradesToday < maxTrades
+
+longSig  = canEnter and crossUp and (not useVwap or close > vwap)
+shortSig = canEnter and allowShort and crossDn and (not useVwap or close < vwap)
+
+// ---------- 損切り・トレーリング（確定した終値を基準に、有利な方向にだけ動かす）
+var float stopLevel = na
+
+if longSig
+    strategy.entry("買い", strategy.long)
+    stopLevel := close * (1 - stopPct / 100)   // 約定は次の足の始値。ここでは概算
+    tradesToday += 1
+if shortSig
+    strategy.entry("空売り", strategy.short)
+    stopLevel := close * (1 + stopPct / 100)
+    tradesToday += 1
+
+if strategy.position_size > 0
+    stopLevel := math.max(stopLevel, close * (1 - trailPct / 100))
+if strategy.position_size < 0
+    stopLevel := math.min(stopLevel, close * (1 + trailPct / 100))
+
+if not na(stopLevel)
+    strategy.exit("買い損切り", "買い", stop = stopLevel, comment = "損切り")
+    strategy.exit("空売り損切り", "空売り", stop = stopLevel, comment = "損切り")
+
+if exitOnCross
+    if strategy.position_size > 0 and crossDn
+        strategy.close("買い", comment = "手仕舞いシグナル")
+    if strategy.position_size < 0 and crossUp
+        strategy.close("空売り", comment = "手仕舞いシグナル")
+
+// 15:15 の足が確定したら、次の足（15:20）の始値で全て決済
+if inExit
+    strategy.close_all(comment = "大引け前決済")
+
+if flat and not longSig and not shortSig
+    stopLevel := na
+
+// ---------- 表示
+plot(emaF, "EMA短期", color = color.orange)
+plot(emaS, "EMA長期", color = color.purple)
+plot(vwap, "VWAP", color = color.gray, style = plot.style_circles, linewidth = 1)
+plot(strategy.position_size != 0 ? stopLevel : na, "損切りライン", color = color.red, style = plot.style_linebr)

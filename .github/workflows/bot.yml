@@ -1,0 +1,59 @@
+# 自動売買ボット（仮想の売買）を平日の取引時間に動かす。
+# GitHub Actions の1回の実行は最大6時間なので、前場と後場に分けて起動する。
+# 起動が数分〜十数分遅れることがあるため、取引開始より早めに起動して待機させる。
+# 状態（保有中の建玉など）と記録は、実行の最後にリポジトリへ保存し、次の実行が引き継ぐ。
+name: bot
+
+on:
+  schedule:
+    - cron: "35 23 * * 0-4"   # 日本時間 平日 8:35 起動 → 前場（11:35 まで）
+    - cron: "5 3 * * 1-5"     # 日本時間 平日 12:05 起動 → 後場（15:40 まで）
+  workflow_dispatch:
+    inputs:
+      until:
+        description: "終了する時刻（日本時間 HH:MM）"
+        default: "15:40"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bot
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      TZ: Asia/Tokyo
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: 終了時刻を決める
+        id: t
+        run: |
+          if [ -n "${{ github.event.inputs.until }}" ]; then echo "until=${{ github.event.inputs.until }}" >> "$GITHUB_OUTPUT";
+          elif [ "$(date +%H)" -lt 12 ]; then echo "until=11:35" >> "$GITHUB_OUTPUT";
+          else echo "until=15:40" >> "$GITHUB_OUTPUT"; fi
+      - name: ボットを動かす
+        run: python -m bot.run live --until "${{ steps.t.outputs.until }}"
+      - name: 株価データを貯める（後場のあと）
+        if: always() && steps.t.outputs.until >= '15:31'
+        run: python data.py || true
+      - name: 状態と記録を保存
+        if: always()
+        run: |
+          git config user.name "daytrade-bot"
+          git config user.email "daytrade-bot@users.noreply.github.com"
+          git add logs state data || true
+          git diff --cached --quiet || git commit -m "bot: $(date '+%Y-%m-%d %H:%M') の記録"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
+      - name: 失敗したら通知
+        if: failure()
+        run: python -m bot.notify "🚨 ボットの実行が失敗しました。GitHub の Actions 画面で確認してください。"

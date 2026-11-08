@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.ntfy_topic
+experiments/exp2_data/pdf/
+state/*.tmp
+logs/replay/

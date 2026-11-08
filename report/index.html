@@ -1,0 +1,420 @@
+<title>デイトレ戦略 検証ノート</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* レイアウト: 1カラムの検証ノート。結論 → 成績表 → 資産推移 → 1日ごとの売買を拡大して見る */
+:root {
+  --bg: #f3f5f8;
+  --surface: #ffffff;
+  --ink: #18212d;
+  --muted: #5b6878;
+  --line: #d9dfe7;
+  --ai: #24446f;          /* 藍: 操作・選択のアクセント */
+  --ai-soft: #e3e9f2;
+  --up: #c8352b;          /* 陽線・利益（日本の証券アプリの慣習で赤） */
+  --down: #1f6f8b;        /* 陰線・損失 */
+  --ema-fast: #c98a12;
+  --ema-slow: #7a4fb5;
+  --vwap: #18212d;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f141b; --surface: #171e28; --ink: #e6ebf1; --muted: #93a0b0; --line: #2a3442;
+    --ai: #8fb0e0; --ai-soft: #1f2b3c; --up: #f06a5e; --down: #4fb3d1;
+    --ema-fast: #e6b04a; --ema-slow: #b392e8; --vwap: #e6ebf1; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f141b; --surface: #171e28; --ink: #e6ebf1; --muted: #93a0b0; --line: #2a3442;
+  --ai: #8fb0e0; --ai-soft: #1f2b3c; --up: #f06a5e; --down: #4fb3d1;
+  --ema-fast: #e6b04a; --ema-slow: #b392e8; --vwap: #e6ebf1; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body);
+  font-size: 15px; line-height: 1.7;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+main { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; }
+h1, h2 { text-wrap: balance; line-height: 1.35; margin: 0; }
+h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 700; letter-spacing: .01em; }
+h2 { font-size: 1.2rem; font-weight: 700; }
+p { margin: 0; max-width: 65ch; }
+.eyebrow { font-size: .75rem; letter-spacing: .12em; color: var(--muted); font-weight: 500; }
+.num { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.plus { color: var(--up); } .minus { color: var(--down); }
+section { display: grid; gap: 14px; min-width: 0; }
+.sub { color: var(--muted); font-size: .9rem; }
+
+header { display: grid; gap: 14px; }
+.conds { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: .85rem; }
+.verdict {
+  display: grid; gap: 6px; padding: 18px 20px; background: var(--surface);
+  border: 1px solid var(--line); border-left: 4px solid var(--down); border-radius: 4px;
+}
+.verdict strong { font-size: 1.05rem; }
+
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: .88rem; }
+th, td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-weight: 500; color: var(--muted); font-size: .78rem; letter-spacing: .04em; background: var(--surface); }
+th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align: left; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--ai-soft); }
+tbody tr.sel { background: var(--ai-soft); box-shadow: inset 3px 0 0 var(--ai); }
+tbody tr:last-child td { border-bottom: 0; }
+.pill { display: inline-block; font-size: .72rem; padding: 1px 8px; border-radius: 99px; border: 1px solid currentColor; }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--surface); }
+.seg button {
+  font: inherit; font-size: .85rem; padding: 6px 14px; border: 0; background: transparent; color: var(--muted); cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--ai); color: var(--bg); }
+button:focus-visible, select:focus-visible, tr:focus-visible { outline: 2px solid var(--ai); outline-offset: 2px; }
+
+.chart-box { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 10px; min-width: 0; }
+.chart { height: 340px; width: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .8rem; color: var(--muted); padding: 6px 4px 2px; }
+.legend i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+.controls label { display: grid; gap: 4px; font-size: .78rem; color: var(--muted); }
+select {
+  font: inherit; font-size: .9rem; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; max-width: 100%;
+}
+.nav { display: flex; gap: 6px; }
+.nav button {
+  font: inherit; font-size: .85rem; padding: 6px 12px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); border-radius: 4px; cursor: pointer;
+}
+.trades { display: grid; gap: 8px; }
+.trade {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 4px 14px; align-items: baseline;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 10px 14px; font-size: .88rem;
+}
+.trade .side { font-weight: 700; }
+.trade .why { color: var(--muted); font-size: .8rem; }
+.empty { color: var(--muted); font-size: .9rem; padding: 10px 0; }
+
+.notes { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); }
+.note { display: grid; gap: 8px; align-content: start; }
+.note h3 { margin: 0; font-size: 1rem; }
+.note ul { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; color: var(--ink); }
+.note li { max-width: 60ch; }
+.err { color: var(--up); }
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">日本株 5分足 バックテスト</div>
+    <h1>デイトレ戦略 検証ノート</h1>
+    <div class="conds" id="conds"></div>
+    <div class="verdict">
+      <strong>8パターンすべて、コストを差し引くと負け越し</strong>
+      <p class="sub">売買のたびに価格ズレ（片道0.05%）を差し引くと、どの戦略も期間リターンがマイナスでした。前半と後半に分けても、プラスが続いた組み合わせはありません。このまま本番には使えません。</p>
+    </div>
+  </header>
+
+  <section aria-labelledby="h-summary">
+    <h2 id="h-summary">戦略ごとの成績</h2>
+    <p class="sub">行を選ぶと、下の資産推移とチャートがその戦略に切り替わります。</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>戦略</th><th>売買</th><th>取引回数</th><th>勝率</th><th>1回の平均損益</th><th>PF</th>
+          <th>60日リターン</th><th>最大DD</th><th>前半</th><th>後半</th><th>判定</th>
+        </tr></thead>
+        <tbody id="summary"></tbody>
+      </table>
+    </div>
+    <p class="sub">PF（プロフィットファクター）は、利益の合計 ÷ 損失の合計です。1を超えると勝ち越しです。最大DDは、資産が一番大きく減ったときの下落率です。</p>
+  </section>
+
+  <section aria-labelledby="h-equity">
+    <h2 id="h-equity">資産の推移</h2>
+    <p class="sub">資金を20銘柄に均等に分けて、毎日その戦略で売買した場合の累積リターンです。</p>
+    <div><div class="seg" role="group" aria-label="売買の種類">
+      <button type="button" id="mode-long" aria-pressed="true">買いのみ</button>
+      <button type="button" id="mode-short" aria-pressed="false">買い+売り</button>
+    </div></div>
+    <div class="chart-box">
+      <div class="chart" id="equity"></div>
+      <div class="legend" id="equity-legend"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-day">
+    <h2 id="h-day">1日の売買を見る</h2>
+    <p class="sub">銘柄と日付を選ぶと、その日の5分足に、買った位置と決済した位置を表示します。▲は買い、▼は空売り、●は決済です。</p>
+    <div class="controls">
+      <label for="sel-variant">戦略<select id="sel-variant"></select></label>
+      <label for="sel-ticker">銘柄<select id="sel-ticker"></select></label>
+      <label for="sel-date">日付<select id="sel-date"></select></label>
+      <div class="nav">
+        <button type="button" id="prev" aria-label="前の取引日">← 前</button>
+        <button type="button" id="next" aria-label="次の取引日">次 →</button>
+      </div>
+    </div>
+    <div class="chart-box">
+      <div class="chart" id="candles"></div>
+      <div class="legend">
+        <span><i style="background:var(--ema-fast)"></i>EMA9</span>
+        <span><i style="background:var(--ema-slow)"></i>EMA26</span>
+        <span><i style="background:var(--vwap)"></i>VWAP</span>
+        <span>陽線は赤、陰線は青</span>
+      </div>
+    </div>
+    <div class="trades" id="day-trades"></div>
+  </section>
+
+  <section aria-labelledby="h-notes">
+    <h2 id="h-notes">この結果から言えること</h2>
+    <div class="notes">
+      <div class="note">
+        <h3>手数料を差し引く前の儲けが小さすぎる</h3>
+        <ul>
+          <li>コストがゼロなら、移動平均クロスとVWAP押し目は、わずかにプラスでした（60日で+3〜4%）。</li>
+          <li>1回あたりの儲けは平均0.05〜0.08%で、往復のコスト0.1%より小さくなっています。</li>
+          <li>大型株の5分足で定番の手法を使っても、コストに勝てるほどの差は出ていません。</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>改善版が負けた理由</h3>
+        <ul>
+          <li>初回の検証で「引けまで持った取引は勝っていた」ことを根拠に、利益を伸ばすルールに変えました。</li>
+          <li>ただ、損切りに掛からずに残った取引は、もともと勝っている取引です。結果を見てから条件を選んでいたため、効果はありませんでした。</li>
+          <li>今後も、検証期間に合わせてルールを調整しすぎないよう注意します。</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>データの限界</h3>
+        <ul>
+          <li>5分足は、直近60日分しか取れていません。毎日データを取りに行けば、検証できる期間が伸びます。</li>
+          <li>取得元のデータは、多くの日で9:00の足が欠けています。寄り付きブレイクアウトの結果は少しずれている可能性があります。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const pct = (v, d = 1) => (v > 0 ? "+" : "") + (v * 100).toFixed(d) + "%";
+  const cls = (v) => (v > 0 ? "plus" : v < 0 ? "minus" : "");
+
+  let R;
+  try {
+    R = await (await fetch("data.json")).json();
+  } catch (e) {
+    $("summary").innerHTML = '<tr><td colspan="11" class="err">成績データを読み込めませんでした。ページを再読み込みしてください。</td></tr>';
+    return;
+  }
+  const V = Object.fromEntries(R.variants.map((v) => [v.id, v]));
+  const tickers = R.meta.tickers;
+  $("conds").innerHTML = [
+    `期間 ${R.meta.period[0]} 〜 ${R.meta.period[1]}`,
+    `${Object.keys(tickers).length}銘柄（大型株）`,
+    `価格ズレ 片道${(R.meta.slippage * 100).toFixed(2)}%`,
+    "手数料 0円（信用の無料コースを想定）",
+    "15:20までに全て決済",
+  ].map((s) => `<span>${s}</span>`).join("");
+
+  // ---------- 状態
+  const state = { variant: "trend_long", mode: "long", ticker: "7203.T", date: null };
+
+  // ---------- 成績表
+  const tbody = $("summary");
+  tbody.innerHTML = R.variants.map((v) => `
+    <tr data-id="${v.id}" tabindex="0">
+      <td>${v.name}</td><td>${v.mode}</td>
+      <td class="num">${v.n}</td>
+      <td class="num">${(v.win * 100).toFixed(0)}%</td>
+      <td class="num ${cls(v.avg)}">${pct(v.avg, 3)}</td>
+      <td class="num">${v.pf.toFixed(2)}</td>
+      <td class="num ${cls(v.total)}">${pct(v.total)}</td>
+      <td class="num minus">${pct(v.mdd)}</td>
+      <td class="num ${cls(v.first)}">${pct(v.first)}</td>
+      <td class="num ${cls(v.second)}">${pct(v.second)}</td>
+      <td><span class="pill ${v.total > 0 ? "plus" : "minus"}">${v.total > 0 ? "勝ち越し" : "負け越し"}</span></td>
+    </tr>`).join("");
+  const pickRow = (tr) => {
+    if (!tr) return;
+    const v = V[tr.dataset.id];
+    state.variant = v.id;
+    setMode(v.id.endsWith("_short") ? "short" : "long");
+    $("sel-variant").value = v.id;
+    refreshDates(true);
+  };
+  tbody.addEventListener("click", (e) => pickRow(e.target.closest("tr")));
+  tbody.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pickRow(e.target.closest("tr")); } });
+  const markRow = () => tbody.querySelectorAll("tr").forEach((tr) => tr.classList.toggle("sel", tr.dataset.id === state.variant));
+
+  // ---------- チャート共通
+  const LC = window.LightweightCharts;
+  if (!LC) {
+    $("equity").innerHTML = '<p class="err">チャートの部品を読み込めませんでした。ページを再読み込みしてください。</p>';
+    return;
+  }
+  const baseOpts = () => ({
+    autoSize: true,
+    layout: { background: { type: "solid", color: css("--surface") }, textColor: css("--muted"), fontFamily: css("--font-num") },
+    grid: { vertLines: { color: css("--line") }, horzLines: { color: css("--line") } },
+    rightPriceScale: { borderColor: css("--line") },
+    timeScale: { borderColor: css("--line") },
+    crosshair: { mode: 0 },
+  });
+
+  // ---------- 資産推移
+  const eqChart = LC.createChart($("equity"), { ...baseOpts(), timeScale: { borderColor: css("--line") },
+    localization: { priceFormatter: (p) => pct(p) } });
+  const STRAT_COLORS = { trend: "--ai", ema: "--ema-slow", vwap: "--ema-fast", orb: "--down" };
+  let eqSeries = [];
+  function drawEquity() {
+    eqSeries.forEach((s) => eqChart.removeSeries(s));
+    eqSeries = [];
+    const items = R.variants.filter((v) => v.id.endsWith("_" + state.mode));
+    $("equity-legend").innerHTML = items.map((v) =>
+      `<span><i style="background:var(${STRAT_COLORS[v.strategy]})"></i>${v.name} <span class="num ${cls(v.total)}">${pct(v.total)}</span></span>`).join("");
+    for (const v of items) {
+      const s = eqChart.addLineSeries({
+        color: css(STRAT_COLORS[v.strategy]),
+        lineWidth: v.id === state.variant ? 3 : 1.5,
+        priceLineVisible: false, lastValueVisible: false,
+      });
+      s.setData(v.equity.map(([d, val]) => ({ time: d, value: val })));
+      eqSeries.push(s);
+    }
+    eqSeries[0]?.createPriceLine({ price: 0, color: css("--muted"), lineWidth: 1, lineStyle: 2, axisLabelVisible: false });
+    requestAnimationFrame(() => eqChart.timeScale().fitContent());
+  }
+  function setMode(m) {
+    state.mode = m;
+    $("mode-long").setAttribute("aria-pressed", m === "long");
+    $("mode-short").setAttribute("aria-pressed", m === "short");
+    if (!state.variant.endsWith("_" + m)) {
+      state.variant = state.variant.replace(/_(long|short)$/, "_" + m);
+      $("sel-variant").value = state.variant;
+      refreshDates(true);
+    }
+    drawEquity(); markRow();
+  }
+  $("mode-long").onclick = () => setMode("long");
+  $("mode-short").onclick = () => setMode("short");
+
+  // ---------- 1日の売買
+  $("sel-variant").innerHTML = R.variants.map((v) => `<option value="${v.id}">${v.name}（${v.mode}）</option>`).join("");
+  $("sel-ticker").innerHTML = Object.entries(tickers).map(([t, n]) => `<option value="${t}">${t.replace(".T", "")} ${n}</option>`).join("");
+  $("sel-variant").value = state.variant;
+  $("sel-ticker").value = state.ticker;
+
+  const candleChart = LC.createChart($("candles"), { ...baseOpts(), timeScale: { borderColor: css("--line"), timeVisible: true, secondsVisible: false } });
+  const mkCandle = () => candleChart.addCandlestickSeries({
+    upColor: css("--up"), downColor: css("--down"), borderUpColor: css("--up"), borderDownColor: css("--down"),
+    wickUpColor: css("--up"), wickDownColor: css("--down"),
+  });
+  let candle = mkCandle();
+  let lines = {};
+  const mkLines = () => {
+    lines = {
+      f: candleChart.addLineSeries({ color: css("--ema-fast"), lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }),
+      s: candleChart.addLineSeries({ color: css("--ema-slow"), lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }),
+      v: candleChart.addLineSeries({ color: css("--vwap"), lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false }),
+    };
+  };
+  mkLines();
+
+  const barCache = {};
+  async function bars(t) {
+    if (!barCache[t]) barCache[t] = (await (await fetch(`bars/${t}.json`)).json());
+    return barCache[t];
+  }
+  const dayKey = (sec) => new Date(sec * 1000).toISOString().slice(0, 10);
+  const toSec = (date, hm) => Date.UTC(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10), +hm.slice(0, 2), +hm.slice(3, 5)) / 1000;
+  const tradesFor = (vid, t) => R.trades.filter((r) => r[0] === vid && r[1] === t);
+  const fmtDate = (d) => { const w = "日月火水木金土"[new Date(d + "T00:00:00Z").getUTCDay()]; return `${d.slice(5).replace("-", "/")}（${w}）`; };
+
+  async function refreshDates(keepDate) {
+    state.variant = $("sel-variant").value;
+    state.ticker = $("sel-ticker").value;
+    markRow();
+    const b = await bars(state.ticker);
+    const days = [...new Set(b.map((x) => dayKey(x[0])))];
+    const tr = tradesFor(state.variant, state.ticker);
+    const pnl = {};
+    tr.forEach((r) => { pnl[r[2]] = (pnl[r[2]] || 0) + r[9]; });
+    $("sel-date").innerHTML = days.map((d) => `<option value="${d}">${fmtDate(d)}${d in pnl ? "　" + pct(pnl[d], 2) : "　取引なし"}</option>`).join("");
+    if (!(keepDate && state.date && days.includes(state.date))) {
+      state.date = tr.length ? tr[0][2] : days[days.length - 1];
+    }
+    $("sel-date").value = state.date;
+    drawDay();
+  }
+
+  function ema(vals, span) { const a = 2 / (span + 1); let e; return vals.map((v) => (e = e === undefined ? v : e + a * (v - e))); }
+
+  async function drawDay() {
+    state.date = $("sel-date").value;
+    const b = (await bars(state.ticker)).filter((x) => dayKey(x[0]) === state.date);
+    const closes = b.map((x) => x[4]);
+    const ef = ema(closes, 9), es = ema(closes, 26);
+    let pv = 0, vv = 0;
+    const vw = b.map((x) => { const tp = (x[2] + x[3] + x[4]) / 3; pv += tp * x[5]; vv += x[5]; return pv / vv; });
+    candle.setData(b.map((x) => ({ time: x[0], open: x[1], high: x[2], low: x[3], close: x[4] })));
+    lines.f.setData(b.map((x, i) => ({ time: x[0], value: ef[i] })));
+    lines.s.setData(b.map((x, i) => ({ time: x[0], value: es[i] })));
+    lines.v.setData(b.map((x, i) => ({ time: x[0], value: vw[i] })));
+
+    const tr = tradesFor(state.variant, state.ticker).filter((r) => r[2] === state.date);
+    const marks = [];
+    for (const r of tr) {
+      const long = r[3] === 1;
+      marks.push({ time: toSec(r[2], r[4]), position: long ? "belowBar" : "aboveBar", shape: long ? "arrowUp" : "arrowDown",
+        color: css("--ai"), text: `${long ? "買い" : "空売り"} ${r[5]}` });
+      marks.push({ time: toSec(r[2], r[6]), position: long ? "aboveBar" : "belowBar", shape: "circle",
+        color: r[9] > 0 ? css("--up") : css("--down"), text: `${r[8]} ${pct(r[9], 2)}` });
+    }
+    marks.sort((a, c) => a.time - c.time);
+    candle.setMarkers(marks);
+    requestAnimationFrame(() => candleChart.timeScale().fitContent());
+
+    $("day-trades").innerHTML = tr.length ? tr.map((r) => `
+      <div class="trade">
+        <span class="side">${r[3] === 1 ? "買い" : "空売り"}</span>
+        <span class="num">${r[4]} ${r[5].toLocaleString()} → ${r[6]} ${r[7].toLocaleString()}</span>
+        <span class="num ${cls(r[9])}">${pct(r[9], 2)}</span>
+        <span class="why" style="grid-column: 1 / -1">${r[8]}（コスト差し引き後）</span>
+      </div>`).join("")
+      : '<p class="empty">この日は、この戦略の売買条件を満たしませんでした。</p>';
+  }
+
+  $("sel-variant").onchange = () => { const v = $("sel-variant").value; state.variant = v; setMode(v.endsWith("_short") ? "short" : "long"); refreshDates(true); };
+  $("sel-ticker").onchange = () => refreshDates(false);
+  $("sel-date").onchange = drawDay;
+  const step = (d) => { const s = $("sel-date"); const i = s.selectedIndex + d; if (i >= 0 && i < s.options.length) { s.selectedIndex = i; drawDay(); } };
+  $("prev").onclick = () => step(-1);
+  $("next").onclick = () => step(1);
+
+  // ---------- テーマ切り替えに追従
+  function retheme() {
+    const o = baseOpts(); delete o.autoSize;
+    eqChart.applyOptions(o); candleChart.applyOptions(o);
+    candleChart.removeSeries(candle); Object.values(lines).forEach((s) => candleChart.removeSeries(s));
+    candle = mkCandle(); mkLines();
+    drawEquity(); drawDay();
+  }
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  drawEquity();
+  await refreshDates(false);
+})();
+</script>

@@ -1,0 +1,38 @@
+# 自動売買ボットの設定
+# お金に関わる値は、すべてここで決める。ボットもClaudeも、これを超える取引はしない。
+
+mode = "paper"            # paper = 仮想の売買（発注しない） / live = 本番（立花証券 e支店 API）
+account = "cash"          # cash = 現物（買いのみ。1銘柄1日1往復まで） / margin = 信用
+
+[money]
+capital = 300000          # ボットに任せる資金（円）
+max_loss_per_trade = 1500 # 1回の取引で失ってよい上限（円）。損切りに掛かったときの損失がこれ以下になるよう株数を決める
+daily_loss_limit = 3000   # 1日の損失がこの額に達したら、全て決済してその日は止める（円）
+max_trades_per_day = 3    # 1日の新規取引の上限（全銘柄の合計）
+max_positions = 1         # 同時に持つ銘柄数の上限
+slippage = 0.0005         # 成績計算に使う価格ズレ（片道）
+
+[time]
+entry_start = "09:30"     # 新規注文を出してよい時間帯
+entry_end = "13:00"
+force_exit = "15:20"      # この時刻までに必ず全て決済（持ち越さない）
+
+[strategy]
+name = "trend"            # backtest.py の STRATEGIES のキー
+# 戦略の数値を変える場合はここに書く（例: stop = 0.008, trail = 0.010）
+params = {}
+
+[timemachine]
+enabled = true            # 注文の前に、損切りに先に届く確率を計算して記録する
+block_if_stop_first_above = 1.0  # この確率を超えたら見送る（1.0 = 記録するだけで見送らない）
+replays = 2000
+
+[universe]
+# 監視する銘柄。資金で100株買えない銘柄は自動で除外される
+tickers = ["7203.T", "8306.T", "9984.T", "6501.T", "7011.T", "8316.T", "6702.T",
+           "6758.T", "5401.T", "7267.T", "8411.T", "9432.T", "8058.T", "4502.T"]
+
+[notify]
+# 通知先は Discord の Webhook URL を環境変数 DISCORD_WEBHOOK_URL に入れる（ここには書かない）
+on_trade = true           # 約定・決済のたびに通知
+on_daily_summary = true   # 引け後に1日のまとめを通知

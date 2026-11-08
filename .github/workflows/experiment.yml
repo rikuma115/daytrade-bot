@@ -1,0 +1,58 @@
+# Claude を使う実験（実験1: シグナルの見極め / 実験2: 開示を読んで銘柄選び）を GitHub 上で実行する。
+# API キーは リポジトリの Settings → Secrets → ANTHROPIC_API_KEY に登録しておく（コードやログには出ない）。
+# 答えは experiments/cache に保存してリポジトリに戻すので、同じ実験を再実行しても二重に課金されない。
+name: experiment
+
+on:
+  workflow_dispatch:
+    inputs:
+      experiment:
+        description: "exp1 または exp2"
+        default: exp1
+      model:
+        description: "claude-haiku-5-5 / claude-sonnet-5-5 / claude-opus-5-5"
+        default: claude-haiku-5-5
+      budget:
+        description: "この実行で使ってよい上限（ドル）"
+        default: "10"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: experiment
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt anthropic
+      - name: 実験
+        run: |
+          case "${{ inputs.experiment }}" in
+            exp1) script=experiments/exp1_signals.py ;;
+            exp2) script=experiments/exp2_disclosures.py ;;
+            *) echo "exp1 か exp2 を指定してください"; exit 1 ;;
+          esac
+          python "$script" --model "${{ inputs.model }}" --budget "${{ inputs.budget }}" | tee experiments/results/last_${{ inputs.experiment }}_${{ inputs.model }}.txt
+      - name: 結果を保存
+        if: always()
+        run: |
+          git config user.name "daytrade-bot"
+          git config user.email "daytrade-bot@users.noreply.github.com"
+          git add experiments/cache experiments/results || true
+          git diff --cached --quiet || git commit -m "experiment: ${{ inputs.experiment }} ${{ inputs.model }}"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
+      - name: 完了を通知
+        if: always()
+        run: python -m bot.notify "🧪 実験 ${{ inputs.experiment }}（${{ inputs.model }}）が終わりました: ${{ job.status }}"
