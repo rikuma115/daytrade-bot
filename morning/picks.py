@@ -31,6 +31,8 @@ COST = 0.001
 
 
 def validate(path: str) -> list[str]:
+    if ".open" in Path(path).name:
+        return validate_open(path)
     errs = []
     try:
         d = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -61,6 +63,13 @@ def validate(path: str) -> list[str]:
 def notify(path: str):
     from bot import notify as n
     d = json.loads(Path(path).read_text(encoding="utf-8"))
+    if ".open" in Path(path).name:
+        lines = [f"🔎 {d['date']} {d['decided_at']} 寄り付き後の見直し（記録のみ）"]
+        lines += [f"{'○残す' if r['decision'] == 'keep' else '×外す'} {r['code']} {r['name']}（確信度{r['confidence']}）{r['reason']}"
+                  for r in d["reviews"]]
+        errs = n.send("\n".join(lines), title="寄り付き後の見直し")
+        print("送信しました" if not errs else errs)
+        return
     longs = [p for p in d["picks"] if p["action"] == "long"]
     avoids = [p for p in d["picks"] if p["action"] == "avoid"]
     lines = [f"🌅 {d['date']} Claudeの注目銘柄（記録のみ・売買はしません）", f"地合い: {d['market_view']}"]
@@ -81,6 +90,8 @@ def evaluate() -> str:
     done = set(pd.read_csv(RESULTS, dtype={"code": str})["date"].astype(str)) if RESULTS.exists() else set()
     new_rows = []
     for f in sorted(PICKS.glob("20*.json")):
+        if ".open" in f.name:
+            continue
         date = f.stem
         cand = BRIEFS / f"{date}.candidates.json"
         if date in done or not cand.exists():
@@ -112,6 +123,71 @@ def evaluate() -> str:
     return summary()
 
 
+OPEN_RESULTS = PICKS / "open_results.csv"
+
+
+def validate_open(path: str) -> list[str]:
+    errs = []
+    try:
+        d = json.loads(Path(path).read_text(encoding="utf-8"))
+    except Exception as e:  # noqa: BLE001
+        return [f"JSON として読めない: {e}"]
+    for k in ("date", "decided_at", "reviews"):
+        if k not in d:
+            errs.append(f"{k} がない")
+    if Path(path).name != f"{d.get('date')}.open.json":
+        errs.append("ファイル名は <date>.open.json")
+    morning = PICKS / f"{d.get('date')}.json"
+    longs = {p["code"] for p in json.loads(morning.read_text(encoding="utf-8"))["picks"]
+             if p["action"] == "long"} if morning.exists() else set()
+    for i, r in enumerate(d.get("reviews", [])):
+        for k in ("code", "name", "decision", "confidence", "reason"):
+            if k not in r:
+                errs.append(f"reviews[{i}] に {k} がない")
+        if r.get("decision") not in ("keep", "drop"):
+            errs.append(f"reviews[{i}].decision は keep か drop")
+        if r.get("code") not in longs:
+            errs.append(f"reviews[{i}].code {r.get('code')} は今朝の買い候補にない")
+    return errs
+
+
+def evaluate_open() -> str:
+    """見直した時刻の次の5分足の始値で買い、その日の最後の5分足の終値で売った場合の損益。"""
+    import yfinance as yf
+    done = set(pd.read_csv(OPEN_RESULTS, dtype={"code": str})["date"].astype(str)) if OPEN_RESULTS.exists() else set()
+    rows = []
+    for f in sorted(PICKS.glob("20*.open.json")):
+        d = json.loads(f.read_text(encoding="utf-8"))
+        if d["date"] in done or not d["reviews"]:
+            continue
+        raw = yf.download([f"{r['code']}.T" for r in d["reviews"]], period="5d", interval="5m",
+                          progress=False, auto_adjust=False, group_by="ticker")
+        for r in d["reviews"]:
+            t = f"{r['code']}.T"
+            if raw.empty or t not in raw.columns.get_level_values(0):
+                continue
+            df = raw[t].dropna(subset=["Open", "Close"])
+            df.index = pd.to_datetime(df.index, utc=True).tz_convert("Asia/Tokyo")
+            df = df[df.index.strftime("%Y-%m-%d") == d["date"]]
+            after = df[df.index.strftime("%H:%M") >= d["decided_at"]]
+            if after.empty or df.index[-1].strftime("%H:%M") < "15:00":
+                continue  # まだ引けていない
+            entry, exit_ = float(after["Open"].iloc[0]), float(df["Close"].iloc[-1])
+            rows.append({"date": d["date"], "code": r["code"], "name": r["name"], "decision": r["decision"],
+                         "confidence": r["confidence"], "entry_time": after.index[0].strftime("%H:%M"),
+                         "ret": round(exit_ / entry - 1 - COST, 5)})
+    if rows:
+        pd.DataFrame(rows).to_csv(OPEN_RESULTS, mode="a", header=not OPEN_RESULTS.exists(), index=False)
+    if not OPEN_RESULTS.exists():
+        return ""
+    df = pd.read_csv(OPEN_RESULTS, dtype={"code": str})
+    def line(label, m):
+        s_ = df[m]["ret"]
+        return f"{label} {len(s_)}件 平均 {s_.mean() * 100:+.2f}%" if len(s_) else f"{label} 0件"
+    return (f"🔎 寄り付き後の見直し（記録{df['date'].nunique()}日・見直し時刻から終値まで）\n"
+            f"{line('残す', df['decision'] == 'keep')} / {line('外す', df['decision'] == 'drop')}")
+
+
 def summary() -> str:
     if not RESULTS.exists():
         return "Claudeの注目銘柄: まだ集計できる日がありません"
@@ -138,6 +214,9 @@ def main():
         notify(sys.argv[2])
     elif cmd == "evaluate":
         print(evaluate())
+        extra = evaluate_open()
+        if extra:
+            print(extra)
     else:
         print(__doc__)
 
