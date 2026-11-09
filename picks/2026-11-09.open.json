@@ -1,0 +1,7 @@
+{"date": "2026-11-09", "decided_at": "00:52",
+ "reviews": [
+  {"code": "6996", "name": "ニチコン", "decision": "drop", "confidence": 60, "reason": "窓+9%で寄り高値後に下げ、VWAP割れ。寄り付きが天井の形。"},
+  {"code": "6315", "name": "ＴＯＷＡ", "decision": "keep", "confidence": 65, "reason": "窓+12%後も押さず高値更新、VWAP上で買いが続く。"},
+  {"code": "8012", "name": "長瀬産", "decision": "drop", "confidence": 70, "reason": "始値から下げ続け安値更新、VWAP下。材料は織り込み済み。"},
+  {"code": "6925", "name": "ウシオ電", "decision": "keep", "confidence": 60, "reason": "窓は小さく押し目から切り上げ、VWAP上で高値圏を維持。"}
+ ]}
