@@ -11,7 +11,9 @@ name: bot
 on:
   push:
     branches: [main]
-    paths: ["picks/20??-??-??.json"]   # 朝の注目銘柄（寄り付き後の見直し .open.json では起動しない）
+    paths:                              # 朝の注目銘柄（寄り付き後の見直し .open.json では起動しない）
+      - "picks/20*.json"
+      - "!picks/*.open.json"
   schedule:
     - cron: "35 23 * * 0-4"   # 予備: 日本時間 平日 8:35
     - cron: "5 3 * * 1-5"     # 予備: 日本時間 平日 12:05
