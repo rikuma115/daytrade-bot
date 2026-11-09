@@ -23,7 +23,7 @@
    - **drop（外す）**: 寄り付きが天井になっている（始値から下げて VWAP より下）、窓が大きすぎて上値が重い、材料が織り込まれた
    - 迷う場合は drop
 
-3. `picks/<今日の日付>.open.json` を書く。decided_at は今の時刻（`date +%H:%M`）。
+3. `picks/<今日の日付>.open.json` を書く。decided_at は今の**日本時間**（`TZ=Asia/Tokyo date +%H:%M`）。
    ```json
    {"date": "2026-11-09", "decided_at": "09:53",
     "reviews": [{"code": "6976", "name": "太陽誘電", "decision": "keep", "confidence": 60, "reason": "60字以内"}]}

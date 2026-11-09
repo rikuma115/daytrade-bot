@@ -21,8 +21,6 @@ import json
 import sys
 from pathlib import Path
 
-import pandas as pd
-
 ROOT = Path(__file__).resolve().parent.parent
 PICKS = ROOT / "picks"
 BRIEFS = ROOT / "morning" / "briefs"
@@ -86,6 +84,7 @@ def notify(path: str):
 
 def evaluate() -> str:
     """まだ集計していない日の、候補全銘柄の 始値→終値 を記録し、累計の比較を返す。"""
+    import pandas as pd
     import yfinance as yf
     done = set(pd.read_csv(RESULTS, dtype={"code": str})["date"].astype(str)) if RESULTS.exists() else set()
     new_rows = []
@@ -135,6 +134,8 @@ def validate_open(path: str) -> list[str]:
     for k in ("date", "decided_at", "reviews"):
         if k not in d:
             errs.append(f"{k} がない")
+    if not ("09:00" <= str(d.get("decided_at", "")) <= "15:00"):
+        errs.append("decided_at は日本時間の HH:MM（9:00〜15:00）。TZ=Asia/Tokyo date +%H:%M で確認する")
     if Path(path).name != f"{d.get('date')}.open.json":
         errs.append("ファイル名は <date>.open.json")
     morning = PICKS / f"{d.get('date')}.json"
@@ -153,6 +154,7 @@ def validate_open(path: str) -> list[str]:
 
 def evaluate_open() -> str:
     """見直した時刻の次の5分足の始値で買い、その日の最後の5分足の終値で売った場合の損益。"""
+    import pandas as pd
     import yfinance as yf
     done = set(pd.read_csv(OPEN_RESULTS, dtype={"code": str})["date"].astype(str)) if OPEN_RESULTS.exists() else set()
     rows = []
@@ -189,6 +191,7 @@ def evaluate_open() -> str:
 
 
 def summary() -> str:
+    import pandas as pd
     if not RESULTS.exists():
         return "Claudeの注目銘柄: まだ集計できる日がありません"
     df = pd.read_csv(RESULTS, dtype={"code": str})

@@ -1,13 +1,20 @@
 # 自動売買ボット（仮想の売買）を平日の取引時間に動かす。
-# GitHub Actions の1回の実行は最大6時間なので、前場と後場に分けて起動する。
-# 起動が数分〜十数分遅れることがあるため、取引開始より早めに起動して待機させる。
-# 状態（保有中の建玉など）と記録は、実行の最後にリポジトリへ保存し、次の実行が引き継ぐ。
+#
+# 起動のしかた（GitHub の予約起動は数時間遅れることがあるため、時間どおりに動く仕組みを合図にする）:
+#   1. 毎朝 7:24 ごろ、Claude が朝の注目銘柄（picks/<日付>.json）を保存する → それを合図に前場の実行が始まる
+#      （9:00 まで待機してから売買を始め、11:35 に終了）
+#   2. 前場の実行が終わるときに、後場の実行を自分で起動する（12:30 まで待機して 15:40 に終了）
+#   3. 予約起動（cron）は、1 が動かなかった日の予備。遅れて始まった場合は、その時点の時間帯から動く
+# 1回の実行は最大6時間なので、前場と後場に分ける。状態と記録はリポジトリに保存し、後場が引き継ぐ。
 name: bot
 
 on:
+  push:
+    branches: [main]
+    paths: ["picks/20??-??-??.json"]   # 朝の注目銘柄（寄り付き後の見直し .open.json では起動しない）
   schedule:
-    - cron: "35 23 * * 0-4"   # 日本時間 平日 8:35 起動 → 前場（11:35 まで）
-    - cron: "5 3 * * 1-5"     # 日本時間 平日 12:05 起動 → 後場（15:40 まで）
+    - cron: "35 23 * * 0-4"   # 予備: 日本時間 平日 8:35
+    - cron: "5 3 * * 1-5"     # 予備: 日本時間 平日 12:05
   workflow_dispatch:
     inputs:
       until:
@@ -16,6 +23,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # 前場の終わりに後場の実行を起動するため
 
 concurrency:
   group: bot
@@ -24,7 +32,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 330
     env:
       TZ: Asia/Tokyo
       NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
@@ -39,29 +47,47 @@ jobs:
         id: t
         run: |
           if [ -n "${{ github.event.inputs.until }}" ]; then u="${{ github.event.inputs.until }}";
-          elif [ "$(date +%H)" -lt 12 ]; then u="11:35";
+          elif [ "$(date +%H%M)" -lt 1135 ]; then u="11:35";
           else u="15:40"; fi
+          now=$(date +%H:%M)
           echo "until=$u" >> "$GITHUB_OUTPUT"
-          # 後場の実行かどうか（文字列の時刻は式の中で大小比較できないので、ここで判定する）
           if [[ "$u" > "15:30" ]]; then echo "after_close=true" >> "$GITHUB_OUTPUT"; else echo "after_close=false" >> "$GITHUB_OUTPUT"; fi
+          # すでに終了時刻を過ぎている（予備の起動が遅れて来た、など）なら何もしない
+          if [[ ! "$now" < "$u" ]]; then echo "skip=true" >> "$GITHUB_OUTPUT"; else echo "skip=false" >> "$GITHUB_OUTPUT"; fi
+          echo "起動 $now（${{ github.event_name }}）→ $u まで"
+      - name: 起動を通知
+        if: steps.t.outputs.skip == 'false'
+        run: |
+          python -m bot.notify "▶ ボット起動 $(date +%H:%M)（$([ '${{ steps.t.outputs.until }}' = '11:35' ] && echo 前場 || echo 後場)・仮想）"
       - name: ボットを動かす
+        if: steps.t.outputs.skip == 'false'
         run: python -m bot.run live --until "${{ steps.t.outputs.until }}"
+      - name: 後場の実行を起動する（前場のあと）
+        if: steps.t.outputs.skip == 'false' && steps.t.outputs.until == '11:35'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run bot.yml --ref main -f until=15:40
       - name: 株価データを貯める（後場のあと）
-        if: always() && steps.t.outputs.after_close == 'true'
+        if: always() && steps.t.outputs.after_close == 'true' && steps.t.outputs.skip == 'false'
         run: python data.py || true
       - name: Claudeの注目銘柄の成績を集計して通知（後場のあと）
-        if: always() && steps.t.outputs.after_close == 'true'
+        if: always() && steps.t.outputs.after_close == 'true' && steps.t.outputs.skip == 'false'
         run: |
           msg=$(python -m morning.picks evaluate 2>/dev/null | grep -v "^$" || true)
-          if [ -n "$msg" ] && ls picks/20*.json >/dev/null 2>&1; then python -m bot.notify "$msg"; fi
+          if [ -n "$msg" ]; then python -m bot.notify "$msg"; fi
       - name: 状態と記録を保存
-        if: always()
+        if: always() && steps.t.outputs.skip == 'false'
         run: |
           git config user.name "daytrade-bot"
           git config user.email "daytrade-bot@users.noreply.github.com"
           git add logs state data picks || true
-          git diff --cached --quiet || git commit -m "bot: $(date '+%Y-%m-%d %H:%M') の記録"
-          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
+          if git diff --cached --quiet; then echo "保存するものなし"; exit 0; fi
+          git commit -m "bot: $(date '+%Y-%m-%d %H:%M') の記録"
+          for i in 1 2 3 4 5; do
+            if git pull --rebase -q origin main && git push -q origin HEAD:main; then echo "保存しました"; exit 0; fi
+            sleep $((i * 5))
+          done
+          echo "保存に失敗しました"; exit 1
       - name: 失敗したら通知
         if: failure()
         run: |
