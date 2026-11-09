@@ -1,0 +1,2 @@
+date,ticker,side,qty,entry_time,entry,exit_time,exit,reason,pnl,ret,mode,strategy
+2026-11-09,8053.T,1,100,12:35,1635.0,15:15,1636.5,大引け前決済,-14,-8e-05,paper,trend
