@@ -16,6 +16,9 @@
    python -m morning.open_review
    ```
    「休場日」「見直しは不要」と出たら、何もせずに終了する。
+   ただし「今朝の注目銘柄がありません」と出た場合（朝の作業が失敗している）は、ボットを起動するために
+   `picks/<今日の日付>.json` を `{"date": "<今日の日付>", "market_view": "朝の作業が未完了のため選定なし", "picks": []}`
+   で保存し、`git add picks && git commit -m "朝の作業の代わりに空の注目銘柄を保存" && git pull --rebase -q origin main && git push -q origin main` を実行してから終了する。
 
 2. `morning/briefs/<今日の日付>.open.md` を読んで判断する。
    - 5分足は遅れて届く（目安20分）。「見えている最後の足」の時刻を前提に考える

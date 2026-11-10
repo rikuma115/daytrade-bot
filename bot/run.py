@@ -42,6 +42,11 @@ def live(cfg, until: str = "15:36"):
     log_dir = config.ROOT / "logs" / cfg.mode
     eng = Engine(cfg, YahooFeed(), broker, today, log_dir,
                  state_file=config.ROOT / "state" / f"{today}.json", names=UNIVERSE)
+    started = dt.datetime.now(JST)
+    if not eng.state.last_bar and started.strftime("%H:%M") >= "09:30":
+        # その日の記録がないまま遅れて起動した: 過去の足でさかのぼって売買しない（現実にはできないため）
+        eng.catchup_cutoff = started - dt.timedelta(minutes=30)
+        eng.journal.event("late_start", cutoff=eng.catchup_cutoff.isoformat())
     eng.journal.event("start", mode=cfg.mode, tickers=eng.tickers)
     while True:
         now = dt.datetime.now(JST)

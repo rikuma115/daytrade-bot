@@ -85,7 +85,9 @@ def _get(url, tries=3):
 
 def fetch_list(day: dt.date) -> list[dict]:
     p = D / "lists" / f"{day:%Y%m%d}.json"
-    if p.exists():
+    today = dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).date()
+    # 保存済みの一覧を使うのは、確定した過去の日だけ。直近2日分は開示が増えていくので毎回取り直す
+    if p.exists() and (today - day).days >= 2:
         return json.loads(p.read_text())
     raw = json.loads(_get(f"https://webapi.yanoshin.jp/webapi/tdnet/list/{day:%Y%m%d}.json?limit=10000"))
     items = [x.get("Tdnet", x) for x in raw.get("items", [])]

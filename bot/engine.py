@@ -78,6 +78,7 @@ class Engine:
         self.names = names or {}
         self.journal = Journal(log_dir, date, notify=cfg.notify_on_trade)
         self.state = DayState(date)
+        self.catchup_cutoff = None   # これより前の足では新規の売買をしない（遅れて起動したとき用）
         self._load()
         self.tickers = self._affordable(cfg.tickers)
 
@@ -144,6 +145,9 @@ class Engine:
             for i in range(len(bars)):
                 ts = bars.index[i]
                 if last and ts.isoformat() <= last:
+                    continue
+                if self.catchup_cutoff is not None and ts < self.catchup_cutoff:
+                    self.state.last_bar[t] = ts.isoformat()   # 見ただけにして、さかのぼって売買しない
                     continue
                 try:
                     self._on_bar(t, bars.iloc[: i + 1], i)
