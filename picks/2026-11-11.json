@@ -1,0 +1,10 @@
+{"date": "2026-11-11", "market_view": "米株は小幅安、日経先物-1.2%。前日までの急騰の反動で上値は重く、窓の大きい銘柄は寄り天に注意。",
+ "picks": [
+  {"code": "7389", "name": "あいちＦＧ", "action": "long", "confidence": 60, "reason": "純利益予想+30%上方修正、増配と自社株買いが同時。上期利益も計画比+38%。"},
+  {"code": "2531", "name": "宝ＨＬＤ", "action": "long", "confidence": 55, "reason": "純利益予想+46%、営業益+14%の上方修正と配当予想の増額。"},
+  {"code": "6869", "name": "シスメックス", "action": "long", "confidence": 55, "reason": "営業益予想+14%上方修正。米州の機器販売が好調で関税還付も寄与。"},
+  {"code": "9880", "name": "イノテック", "action": "long", "confidence": 50, "reason": "営業益予想+25%上方修正と増配。メモリーテスター好調だが地合いは弱い。"},
+  {"code": "6849", "name": "日本光電", "action": "avoid", "confidence": 65, "reason": "営業益予想-28%の下方修正。国内の設備投資が慎重で売りが先行しやすい。"},
+  {"code": "9005", "name": "東急", "action": "avoid", "confidence": 50, "reason": "営業益予想-9%の下方修正。"},
+  {"code": "6989", "name": "北電工業", "action": "avoid", "confidence": 60, "reason": "TOB賛同で値上がりは限定的。利益予想は下方修正。"}
+ ]}
