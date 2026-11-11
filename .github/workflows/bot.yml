@@ -40,6 +40,8 @@ jobs:
       NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main   # 起動した時点の最新（前場が保存した状態を後場が確実に引き継ぐため）
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -82,6 +84,7 @@ jobs:
         run: |
           git config user.name "daytrade-bot"
           git config user.email "daytrade-bot@users.noreply.github.com"
+          git config merge.keeptheirs.driver "cp %B %A"
           git add logs state data picks || true
           if git diff --cached --quiet; then echo "保存するものなし"; exit 0; fi
           git commit -m "bot: $(date '+%Y-%m-%d %H:%M') の記録"

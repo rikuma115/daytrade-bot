@@ -1,0 +1,6 @@
+# ボットの記録は、前場と後場の実行が別々に追記するので、保存時に食い違ったら両方の行を残す
+logs/**/*.jsonl merge=union
+logs/**/*.csv merge=union
+picks/*results.csv merge=union
+# 状態ファイルは、保存しようとしている側（新しい方）を残す（keeptheirs はワークフローで定義）
+state/*.json merge=keeptheirs
