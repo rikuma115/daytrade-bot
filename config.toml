@@ -9,7 +9,8 @@ capital = 300000          # ボットに任せる資金（円）
 max_loss_per_trade = 1500 # 1回の取引で失ってよい上限（円）。損切りに掛かったときの損失がこれ以下になるよう株数を決める
 daily_loss_limit = 3000   # 1日の損失がこの額に達したら、全て決済してその日は止める（円）
 max_trades_per_day = 3    # 1日の新規取引の上限（全銘柄の合計）
-max_positions = 1         # 同時に持つ銘柄数の上限
+max_positions = 2         # 同時に持つ銘柄数の上限
+max_per_position = 300000 # 1銘柄に使うお金の上限（円）
 slippage = 0.0005         # 成績計算に使う価格ズレ（片道）
 
 [time]
@@ -18,7 +19,9 @@ entry_end = "13:00"
 force_exit = "15:20"      # この時刻までに必ず全て決済（持ち越さない）
 
 [strategy]
-name = "trend"            # backtest.py の STRATEGIES のキー
+# picks = Claude が寄り付き後の見直しで「残す」とした銘柄を買う（bot/picks_strategy.py）
+# trend など = backtest.py の STRATEGIES のルールだけの戦略
+name = "picks"
 # 戦略の数値を変える場合はここに書く（例: stop = 0.008, trail = 0.010）
 params = {}
 

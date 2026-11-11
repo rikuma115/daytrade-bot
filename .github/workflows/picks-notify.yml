@@ -4,10 +4,11 @@ name: picks-notify
 on:
   push:
     branches: [main]
-    paths: ["picks/20*.json"]
+    paths: ["picks/20*.json", "morning/weekly/*.md"]
 
 jobs:
   send:
+    if: "!contains(join(github.event.commits.*.message, ' '), '毎週の振り返り')"
     runs-on: ubuntu-latest
     env:
       NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
@@ -19,4 +20,20 @@ jobs:
         run: |
           for f in $(git diff --name-only HEAD~1 HEAD -- 'picks/20*.json'); do
             python3 -m morning.picks notify "$f"
+          done
+
+  weekly:
+    # 毎週の振り返りの報告（morning/weekly/<日付>.md）が保存されたら、スマホに送る
+    if: contains(join(github.event.commits.*.message, ' '), '毎週の振り返り')
+    runs-on: ubuntu-latest
+    env:
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: 報告を送る
+        run: |
+          for f in $(git diff --name-only HEAD~1 HEAD -- 'morning/weekly/*.md'); do
+            python3 -c "import sys; from bot import notify; print(notify.send(open(sys.argv[1], encoding='utf-8').read()[:3500], title='今週の振り返り'))" "$f"
           done

@@ -14,6 +14,7 @@ class Config:
     daily_loss_limit: int
     max_trades_per_day: int
     max_positions: int
+    max_per_position: int
     slippage: float
     entry_start: str
     entry_end: str
@@ -48,7 +49,7 @@ def load(path: str | Path = ROOT / "config.toml") -> Config:
         mode=c.get("mode", "paper"), account=c.get("account", "cash"),
         capital=int(m["capital"]), max_loss_per_trade=int(m["max_loss_per_trade"]),
         daily_loss_limit=int(m["daily_loss_limit"]), max_trades_per_day=int(m["max_trades_per_day"]),
-        max_positions=int(m["max_positions"]), slippage=float(m.get("slippage", 0.0005)),
+        max_positions=int(m["max_positions"]), max_per_position=int(m.get("max_per_position", m["capital"])), slippage=float(m.get("slippage", 0.0005)),
         entry_start=t["entry_start"], entry_end=t["entry_end"], force_exit=t["force_exit"],
         strategy=s["name"], strategy_params=s.get("params", {}),
         tm_enabled=bool(tm.get("enabled", True)), tm_block_above=float(tm.get("block_if_stop_first_above", 1.0)),

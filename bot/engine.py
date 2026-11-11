@@ -72,7 +72,11 @@ class Engine:
     def __init__(self, cfg, feed, broker, date: str, log_dir: Path, state_file: Path | None = None,
                  names: dict | None = None):
         self.cfg, self.feed, self.broker = cfg, feed, broker
-        self.strategy = backtest.STRATEGIES[cfg.strategy](**cfg.strategy_params)
+        if cfg.strategy == "picks":
+            from bot.picks_strategy import PicksStrategy
+            self.strategy = PicksStrategy(date, cfg.max_loss_per_trade, use_git=state_file is not None)
+        else:
+            self.strategy = backtest.STRATEGIES[cfg.strategy](**cfg.strategy_params)
         self.trail = getattr(self.strategy, "trail", None)
         self.state_file = state_file
         self.names = names or {}
@@ -80,7 +84,8 @@ class Engine:
         self.state = DayState(date)
         self.catchup_cutoff = None   # これより前の足では新規の売買をしない（遅れて起動したとき用）
         self._load()
-        self.tickers = self._affordable(cfg.tickers)
+        # Claude の銘柄で売買するときは、見直しが届いてから銘柄が決まる
+        self.tickers = [] if cfg.strategy == "picks" else self._affordable(cfg.tickers)
 
     # ---------- 状態の保存（途中で落ちても、再起動で続きから動けるように）
     def _load(self):
@@ -135,6 +140,13 @@ class Engine:
     # ---------- 1ステップ（時刻 now までに確定した足を全て処理）
     def step(self, now: dt.datetime):
         errors_before = self.state.errors
+        if hasattr(self.strategy, "refresh"):
+            new = [t for t in self.strategy.refresh() if t not in self.tickers]
+            if new:
+                self.tickers += new
+                self.journal.event("picks", tickers=new, detail=self.strategy.keep)
+                self.journal.notify("👀 Claudeが残した銘柄の監視を始めます: "
+                                    + "、".join(self._label(t) for t in new))
         for t in self.tickers:
             try:
                 bars = self.feed.bars(t, now)
@@ -221,7 +233,10 @@ class Engine:
 
         # 3. 新規のシグナル
         ctx = self.strategy.prepare(day)
-        sig = self.strategy.entry_signal(ctx, i, tm)
+        if hasattr(self.strategy, "refresh"):
+            sig = self.strategy.entry_signal(ctx, i, tm, ticker=t)
+        else:
+            sig = self.strategy.entry_signal(ctx, i, tm)
         if sig is None:
             return
         side, stop_pct, tgt_pct = sig

@@ -44,7 +44,8 @@ def check(cfg, *, ticker: str, side: int, price: float, stop_pct: float, tm: str
     if room <= 0:
         return Decision(False, 0, "1日の損失の上限に余裕がない")
     used = sum(p.entry_price * p.qty for p in open_positions.values())
-    qty = size(price, stop_pct, min(cfg.max_loss_per_trade, room), cfg.capital - used)
+    cash = min(cfg.capital - used, cfg.max_per_position)   # 1銘柄に使うお金の上限（分散のため）
+    qty = size(price, stop_pct, min(cfg.max_loss_per_trade, room), cash)
     if qty <= 0:
         return Decision(False, 0, "資金か損失の上限の範囲で100株を買えない")
     return Decision(True, qty, "OK")

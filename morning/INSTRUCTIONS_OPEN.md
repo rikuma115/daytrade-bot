@@ -20,6 +20,8 @@
    `picks/<今日の日付>.json` を `{"date": "<今日の日付>", "market_view": "朝の作業が未完了のため選定なし", "picks": []}`
    で保存し、`git add picks && git commit -m "朝の作業の代わりに空の注目銘柄を保存" && git pull --rebase -q origin main && git push -q origin main` を実行してから終了する。
 
+1-2. 判断の前に `morning/LESSONS.md`（これまでの記録から学んだこと）を読む。【仮説】は参考程度にする。
+
 2. `morning/briefs/<今日の日付>.open.md` を読んで判断する。
    - 5分足は遅れて届く（目安20分）。「見えている最後の足」の時刻を前提に考える
    - **keep（残す）**: 窓を開けた後も買いが続いている（VWAP より上、高値を更新、売買代金が多い）
