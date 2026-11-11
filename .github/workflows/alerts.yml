@@ -1,0 +1,22 @@
+# 見張り役（morning/health.py）の通知を送る。alerts/*.md が保存されたら、その中身をスマホに送る。
+name: alerts
+
+on:
+  push:
+    branches: [main]
+    paths: ["alerts/*.md"]
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    env:
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: 通知を送る
+        run: |
+          for f in $(git diff --name-only HEAD~1 HEAD -- 'alerts/*.md'); do
+            python3 -c "import sys; from bot import notify; print(notify.send(open(sys.argv[1], encoding='utf-8').read()[:3500], title='見張り', urgent=True))" "$f"
+          done

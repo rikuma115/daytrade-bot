@@ -63,6 +63,22 @@ jobs:
         if: steps.t.outputs.skip == 'false'
         run: |
           python -m bot.notify "▶ ボット起動 $(date +%H:%M)（$([ '${{ steps.t.outputs.until }}' = '11:35' ] && echo 前場 || echo 後場)・仮想）"
+      - name: 動いている印を保存する（見張り役が確認する）
+        if: steps.t.outputs.skip == 'false'
+        run: |
+          part=$([ '${{ steps.t.outputs.until }}' = '11:35' ] && echo 前場 || echo 後場)
+          python3 - "$part" <<'PY'
+          import json, sys, datetime, pathlib
+          p = pathlib.Path("state/heartbeat.json"); today = datetime.date.today().isoformat()
+          h = json.loads(p.read_text()) if p.exists() else {}
+          if h.get("date") != today: h = {"date": today, "parts": []}
+          h["parts"].append(sys.argv[1]); h["updated"] = datetime.datetime.now().strftime("%H:%M")
+          p.parent.mkdir(exist_ok=True); p.write_text(json.dumps(h, ensure_ascii=False))
+          PY
+          git config user.name "daytrade-bot"; git config user.email "daytrade-bot@users.noreply.github.com"
+          git config merge.keeptheirs.driver "cp %B %A"
+          git add state/heartbeat.json && git commit -qm "bot: 起動 $(date '+%Y-%m-%d %H:%M') $part" || true
+          for i in 1 2 3; do git pull --rebase -q origin main && git push -q origin HEAD:main && break; sleep 5; done
       - name: ボットを動かす
         if: steps.t.outputs.skip == 'false'
         run: python -m bot.run live --until "${{ steps.t.outputs.until }}"
@@ -85,6 +101,9 @@ jobs:
           git config user.name "daytrade-bot"
           git config user.email "daytrade-bot@users.noreply.github.com"
           git config merge.keeptheirs.driver "cp %B %A"
+          if [ '${{ steps.t.outputs.after_close }}' = 'true' ]; then
+            python3 -c "import json,pathlib,datetime; p=pathlib.Path('state/heartbeat.json'); h=json.loads(p.read_text()); h['parts'].append('完了'); h['updated']=datetime.datetime.now().strftime('%H:%M'); p.write_text(json.dumps(h, ensure_ascii=False))" || true
+          fi
           git add logs state data picks || true
           if git diff --cached --quiet; then echo "保存するものなし"; exit 0; fi
           git commit -m "bot: $(date '+%Y-%m-%d %H:%M') の記録"
