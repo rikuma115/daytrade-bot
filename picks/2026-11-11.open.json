@@ -1,0 +1,7 @@
+{"date": "2026-11-11", "decided_at": "09:52",
+ "reviews": [
+  {"code": "7389", "name": "あいちＦＧ", "decision": "keep", "confidence": 55, "reason": "窓は小さく高値を更新、VWAP上。売買代金はやや少ない。"},
+  {"code": "2531", "name": "宝ＨＬＤ", "decision": "drop", "confidence": 65, "reason": "窓なしで始値から下げ、VWAP割れ。売りが優勢。"},
+  {"code": "6869", "name": "シスメックス", "decision": "drop", "confidence": 65, "reason": "寄り直後の高値が天井になり、VWAP割れで戻りも弱い。"},
+  {"code": "9880", "name": "イノテック", "decision": "keep", "confidence": 50, "reason": "窓+14%だが押しが浅く高値更新、VWAP上。窓の大きさは懸念。"}
+ ]}
