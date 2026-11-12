@@ -4,3 +4,83 @@
 {"kind": "late_start", "cutoff": "2026-11-12T09:10:45.448307+09:00"}
 {"kind": "start", "mode": "paper", "tickers": []}
 {"kind": "holiday", "msg": "9:40 になっても株価が届かないため休場日と判断"}
+{"kind": "restored", "state": {"date": "2026-11-12", "entries": 0, "realized": 0.0, "traded_today": [], "halted": false, "halt_reason": "", "last_bar": {}, "open_entries": {}, "errors": 0, "summarized": false}}
+{"kind": "late_start", "cutoff": "2026-11-12T12:33:28.536512+09:00"}
+{"kind": "start", "mode": "paper", "tickers": []}
+{"kind": "picks", "tickers": ["5019.T", "7242.T", "4027.T"], "detail": {"5019.T": {"decided_at": "09:52", "confidence": 55, "reason": "窓は小さく押し目から切り上げ、VWAP上で買いが続く。"}, "7242.T": {"decided_at": "09:52", "confidence": 55, "reason": "寄り後に急騰し高値圏を維持、VWAP上。売買代金は増加中。"}, "4027.T": {"decided_at": "09:52", "confidence": 50, "reason": "窓+14%後も高値を更新、VWAP上。薄商いで反落に注意。"}}}
+{"kind": "notify", "text": "👀 Claudeが残した銘柄の監視を始めます: 5019、7242、4027"}
+{"kind": "order", "ticker": "5019.T", "time": "12:35", "side": 1, "price": 1320.0, "stop_pct": 0.01131, "qty": 100, "odds": null}
+{"kind": "fill", "fill": {"ticker": "5019.T", "kind": "entry", "side": 1, "qty": 100, "price": 1320.0, "time": "12:40", "reason": "新規"}}
+{"kind": "notify", "text": "買い 5019 100株 @1,320.0（12:40）"}
+{"kind": "skip", "ticker": "7242.T", "time": "12:35", "side": 1, "price": 1596.0, "stop_pct": 0.01, "reason": "資金か損失の上限の範囲で100株を買えない"}
+{"kind": "skip", "ticker": "7242.T", "time": "12:40", "side": 1, "price": 1591.0, "stop_pct": 0.01, "reason": "資金か損失の上限の範囲で100株を買えない"}
+{"kind": "skip", "ticker": "7242.T", "time": "12:45", "side": 1, "price": 1590.0, "stop_pct": 0.01, "reason": "資金か損失の上限の範囲で100株を買えない"}
+{"kind": "skip", "ticker": "4027.T", "time": "12:35", "side": 1, "price": 2682.0, "stop_pct": 0.01, "reason": "資金か損失の上限の範囲で100株を買えない"}
+{"kind": "skip", "ticker": "4027.T", "time": "12:40", "side": 1, "price": 2688.0, "stop_pct": 0.01, "reason": "資金か損失の上限の範囲で100株を買えない"}
+{"kind": "skip", "ticker": "4027.T", "time": "12:45", "side": 1, "price": 2676.0, "stop_pct": 0.01, "reason": "資金か損失の上限の範囲で100株を買えない"}
+{"kind": "skip", "ticker": "7242.T", "time": "12:50", "side": 1, "price": 1589.0, "stop_pct": 0.01, "reason": "資金か損失の上限の範囲で100株を買えない"}
+{"kind": "skip", "ticker": "4027.T", "time": "12:50", "side": 1, "price": 2667.0, "stop_pct": 0.01, "reason": "資金か損失の上限の範囲で100株を買えない"}
+{"kind": "skip", "ticker": "7242.T", "time": "12:55", "side": 1, "price": 1587.0, "stop_pct": 0.01, "reason": "資金か損失の上限の範囲で100株を買えない"}
+{"kind": "skip", "ticker": "4027.T", "time": "12:55", "side": 1, "price": 2679.0, "stop_pct": 0.01, "reason": "資金か損失の上限の範囲で100株を買えない"}
+{"kind": "skip", "ticker": "7242.T", "time": "13:00", "side": 1, "price": 1590.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "13:00", "side": 1, "price": 2672.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "13:05", "side": 1, "price": 1588.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "13:05", "side": 1, "price": 2684.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "13:10", "side": 1, "price": 1584.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "13:10", "side": 1, "price": 2686.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "13:15", "side": 1, "price": 1582.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "13:15", "side": 1, "price": 2692.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "13:20", "side": 1, "price": 1584.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "13:20", "side": 1, "price": 2688.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "13:25", "side": 1, "price": 1582.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "13:25", "side": 1, "price": 2688.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "13:30", "side": 1, "price": 1583.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "13:30", "side": 1, "price": 2685.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "13:35", "side": 1, "price": 1586.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "13:35", "side": 1, "price": 2686.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "13:40", "side": 1, "price": 2675.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "13:45", "side": 1, "price": 1584.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "13:45", "side": 1, "price": 2674.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "13:50", "side": 1, "price": 1585.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "13:50", "side": 1, "price": 2669.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "13:55", "side": 1, "price": 1584.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "13:55", "side": 1, "price": 2668.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "14:00", "side": 1, "price": 1584.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "14:00", "side": 1, "price": 2673.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "14:05", "side": 1, "price": 1585.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "14:05", "side": 1, "price": 2673.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "14:10", "side": 1, "price": 1586.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "14:10", "side": 1, "price": 2671.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "14:15", "side": 1, "price": 1586.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "14:15", "side": 1, "price": 2672.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "14:20", "side": 1, "price": 1585.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "14:20", "side": 1, "price": 2671.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "14:25", "side": 1, "price": 1584.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "14:25", "side": 1, "price": 2667.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "14:30", "side": 1, "price": 1584.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "14:30", "side": 1, "price": 2667.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "14:35", "side": 1, "price": 1585.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "14:35", "side": 1, "price": 2646.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "14:40", "side": 1, "price": 1582.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "14:40", "side": 1, "price": 2615.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "14:45", "side": 1, "price": 1583.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "14:45", "side": 1, "price": 2625.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "14:50", "side": 1, "price": 1584.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "14:50", "side": 1, "price": 2625.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "14:55", "side": 1, "price": 1583.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "14:55", "side": 1, "price": 2635.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "15:00", "side": 1, "price": 1584.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "15:00", "side": 1, "price": 2643.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "fill", "fill": {"ticker": "5019.T", "kind": "exit", "side": 1, "qty": 100, "price": 1309.5, "time": "15:05", "reason": "大引け前決済"}, "pnl": -1181}
+{"kind": "notify", "text": "決済 5019 大引け前決済 -1,181円（本日計 -1,181円）"}
+{"kind": "skip", "ticker": "7242.T", "time": "15:05", "side": 1, "price": 1587.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "15:05", "side": 1, "price": 2647.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "5019.T", "time": "15:10", "side": 1, "price": 1316.5, "stop_pct": 0.01134, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "15:10", "side": 1, "price": 1595.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "15:10", "side": 1, "price": 2659.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "5019.T", "time": "15:15", "side": 1, "price": 1317.5, "stop_pct": 0.01133, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "7242.T", "time": "15:15", "side": 1, "price": 1590.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "4027.T", "time": "15:15", "side": 1, "price": 2657.0, "stop_pct": 0.01, "reason": "新規注文の時間外"}
+{"kind": "summary", "entries": 1, "realized": -1181, "halted": false}
+{"kind": "notify", "text": "📒 2026-11-12 仮想 取引 1回 / 損益 -1,181円"}
+{"kind": "stop", "until": "15:40"}
