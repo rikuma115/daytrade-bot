@@ -1,0 +1,11 @@
+{"date": "2026-11-13", "market_view": "米株・半導体は小幅安、日経先物-0.9%。前日まで高値圏で上値は重め。決算の上振れが明確な銘柄に絞る。",
+ "picks": [
+  {"code": "6113", "name": "アマダ", "action": "long", "confidence": 60, "reason": "営業益予想+21%上方修正。旺盛な設備投資需要と円安が追い風。流動性も十分。"},
+  {"code": "8511", "name": "日証金", "action": "long", "confidence": 55, "reason": "経常益予想+20%、純利益+18%の上方修正。株式相場の堅調が背景。"},
+  {"code": "8309", "name": "三井住友トラストＧ", "action": "long", "confidence": 55, "reason": "純利益予想+10.5%上方修正。各事業が好調で売買代金も大きい。"},
+  {"code": "7803", "name": "Ｇ－ブシロード", "action": "long", "confidence": 55, "reason": "通期売上・営業益予想を+22〜25%上方修正。新カードゲームの初動が想定超え。"},
+  {"code": "7762", "name": "シチズン時計", "action": "long", "confidence": 50, "reason": "中間期が予想を上回り、関税還付も加え通期予想を修正。工作機械も好調。"},
+  {"code": "4543", "name": "テルモ", "action": "avoid", "confidence": 70, "reason": "製品回収の影響で営業益・純利益予想を下方修正（純利益-27%）。"},
+  {"code": "5943", "name": "ノーリツ", "action": "avoid", "confidence": 60, "reason": "営業益予想-38%の下方修正。中国市況の低迷が続く。"},
+  {"code": "2201", "name": "森永菓", "action": "avoid", "confidence": 55, "reason": "営業益予想-8%の下方修正。"}
+ ]}
