@@ -1,0 +1,8 @@
+{"date": "2026-11-12", "decided_at": "09:52",
+ "reviews": [
+  {"code": "5019", "name": "出光興産", "decision": "keep", "confidence": 55, "reason": "窓は小さく押し目から切り上げ、VWAP上で買いが続く。"},
+  {"code": "7242", "name": "カヤバ", "decision": "keep", "confidence": 55, "reason": "寄り後に急騰し高値圏を維持、VWAP上。売買代金は増加中。"},
+  {"code": "7186", "name": "横浜ＦＧ", "decision": "drop", "confidence": 60, "reason": "始値から下げてVWAP割れ。上値が重い。"},
+  {"code": "3436", "name": "ＳＵＭＣＯ", "decision": "drop", "confidence": 75, "reason": "窓+12%の寄り天。始値から-6%でVWAP割れ。"},
+  {"code": "4027", "name": "テイカ", "decision": "keep", "confidence": 50, "reason": "窓+14%後も高値を更新、VWAP上。薄商いで反落に注意。"}
+ ]}
