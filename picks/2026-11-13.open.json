@@ -1,0 +1,8 @@
+{"date": "2026-11-13", "decided_at": "09:52",
+ "reviews": [
+  {"code": "6113", "name": "アマダ", "decision": "drop", "confidence": 75, "reason": "窓+22%の寄り天。始値から-8%でVWAP割れ、材料は織り込み済み。"},
+  {"code": "8511", "name": "日証金", "decision": "keep", "confidence": 55, "reason": "窓+9%後も高値圏を維持し、直近は高値更新。VWAP上。"},
+  {"code": "8309", "name": "三井住友トラストＧ", "decision": "keep", "confidence": 60, "reason": "窓は+4.7%で、その後も高値を更新。VWAP上で売買も厚い。"},
+  {"code": "7803", "name": "Ｇ－ブシロード", "decision": "drop", "confidence": 75, "reason": "好材料でも窓は下向き。始値から下げ、VWAP割れ。"},
+  {"code": "7762", "name": "シチズン時計", "decision": "drop", "confidence": 65, "reason": "窓+10%後に下げ、VWAP割れ。寄り付きが天井の形。"}
+ ]}
