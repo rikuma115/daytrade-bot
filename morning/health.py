@@ -85,7 +85,16 @@ def main():
 
     if a.stage == "morning":
         if on_main(picks):
-            print("OK: 朝の注目銘柄あり")
+            # 開示の候補が少なすぎる日は、資料づくりの不具合を疑って知らせる（古い一覧を使っていた事故の再発防止）
+            import re
+            brief = on_main(f"morning/briefs/{d}.md") or ""
+            m = re.search(r"開示（前の営業日 15:25 〜 今朝）: (\d+)社", brief)
+            n = int(m.group(1)) if m else -1
+            if 0 <= n < 10:
+                alert(d, "morning-check", f"⚠️ {d} 今朝の開示の候補が{n}社しかありませんでした。資料づくりの不具合の可能性があるので調べます。")
+                print(f"注意: 開示の候補が{n}社")
+                return
+            print(f"OK: 朝の注目銘柄あり（開示の候補 {n}社）")
             return
         (ROOT / picks).write_text(json.dumps({
             "date": str(d), "market_view": "朝の作業が7:45までに終わらなかったため、今日は選定なし（見張り役が代わりに保存）",
