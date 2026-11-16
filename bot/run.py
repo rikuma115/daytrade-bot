@@ -34,8 +34,10 @@ def replay(cfg, date: str, log_dir: Path) -> Engine:
 
 def live(cfg, until: str = "15:36"):
     """until（日本時間）まで5分ごとに動く。GitHub Actions では前場と後場の2回に分けて起動する。"""
-    if dt.datetime.now(JST).weekday() >= 5:
-        print("土日は動きません")
+    from morning.gather import is_trading_day
+    if not is_trading_day(dt.datetime.now(JST).date()):
+        # 休場日は祝日の暦で判断する（株価が届かないことで判断すると、監視銘柄が0の時間帯に誤って止まるため）
+        print("休場日なので動きません")
         return
     today = dt.datetime.now(JST).date().isoformat()
     broker = PaperBroker(cfg.force_exit) if cfg.mode == "paper" else TachibanaBroker(cfg)
@@ -54,10 +56,6 @@ def live(cfg, until: str = "15:36"):
             break
         if now.strftime("%H:%M") >= "09:00":
             eng.step(now)
-            if now.strftime("%H:%M") >= "09:40" and not eng.state.last_bar:
-                eng.journal.event("holiday", msg="9:40 になっても株価が届かないため休場日と判断")
-                print("休場日のため終了します")
-                return
         # 次の5分の区切り + 20秒まで待つ（足が確定してデータが届くのを待つ）
         nxt = (now.replace(second=0, microsecond=0) + dt.timedelta(minutes=5 - now.minute % 5)
                + dt.timedelta(seconds=20))

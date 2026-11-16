@@ -82,6 +82,11 @@ jobs:
       - name: ボットを動かす
         if: steps.t.outputs.skip == 'false'
         run: python -m bot.run live --until "${{ steps.t.outputs.until }}"
+      - name: 終わった時刻を印に残す（見張り役が、途中で止まっていないかを確認する）
+        if: always() && steps.t.outputs.skip == 'false'
+        run: |
+          part=$([ '${{ steps.t.outputs.until }}' = '11:35' ] && echo 前場 || echo 後場)
+          python3 -c "import json,pathlib,datetime,sys; p=pathlib.Path('state/heartbeat.json'); h=json.loads(p.read_text()); h.setdefault('ended', {})[sys.argv[1]]=datetime.datetime.now().strftime('%H:%M'); p.write_text(json.dumps(h, ensure_ascii=False))" "$part" || true
       - name: 後場の実行を起動する（前場のあと）
         if: steps.t.outputs.skip == 'false' && steps.t.outputs.until == '11:35'
         env:

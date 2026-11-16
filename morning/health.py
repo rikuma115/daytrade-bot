@@ -56,6 +56,20 @@ def bot_started(d: dt.date, part: str) -> bool:
     return h.get("date") == str(d) and part in h.get("parts", [])
 
 
+def bot_running(d: dt.date, now: dt.datetime) -> bool:
+    """今、ボットが動いているはずの時間帯に、実際に動いているか（起動済みで、予定より早く終わっていない）。"""
+    hb = on_main("state/heartbeat.json")
+    if not hb:
+        return False
+    h = json.loads(hb)
+    if h.get("date") != str(d):
+        return False
+    part = "前場" if now.strftime("%H:%M") < "11:35" else "後場"
+    planned_end = "11:35" if part == "前場" else "15:40"
+    ended = h.get("ended", {}).get(part)
+    return part in h.get("parts", []) and (ended is None or ended >= planned_end)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--stage", required=True, choices=["morning", "midday", "evening"])
@@ -81,7 +95,7 @@ def main():
         print("代替: 空の注目銘柄を保存し、通知した")
 
     elif a.stage == "midday":
-        if bot_started(d, "前場"):
+        if bot_running(d, now):
             print("OK: ボット稼働中")
             return
         # 注目銘柄のファイルを保存し直すと、それを合図にボットが起動する
@@ -90,7 +104,7 @@ def main():
             "date": str(d), "market_view": "朝の作業が未完了のため選定なし（見張り役が代わりに保存）", "picks": []}
         data["restarted_at"] = now.strftime("%H:%M")
         p.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-        alert(d, "midday", f"⚠️ {d} ボットが朝から動いていませんでした（{now:%H:%M} 確認）。今から起動し直します。",
+        alert(d, "midday", f"⚠️ {d} ボットが動いていませんでした（{now:%H:%M} 確認。起動しなかったか、途中で止まっていた）。今から起動し直します。",
               [picks])
         print("代替: ボットを起動し直し、通知した")
 
