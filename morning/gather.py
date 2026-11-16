@@ -76,7 +76,7 @@ def disclosures(d: dt.date, now: dt.datetime) -> pd.DataFrame:
     hi = min(now.replace(tzinfo=None), dt.datetime.combine(d, dt.time(8, 59)))
     rows, day = [], prev
     while day <= d:
-        for x in fetch_list(day):
+        for x in fetch_list(day, use_cache=False):   # 朝は必ず最新を取り直す
             t = dt.datetime.fromisoformat(x["pubdate"])
             title = x["title"]
             if (lo < t <= hi and any(k in title for k in KINDS + EXTRA_KINDS)

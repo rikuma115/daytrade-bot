@@ -83,16 +83,18 @@ def _get(url, tries=3):
             time.sleep(3 * (i + 1))
 
 
-def fetch_list(day: dt.date) -> list[dict]:
+def fetch_list(day: dt.date, use_cache: bool = True) -> list[dict]:
+    """その日の開示一覧。use_cache=False なら必ず取り直す（朝の資料づくりはこちら。
+    保存済みの一覧は、保存した時点より後の開示を含まないため）。"""
     p = D / "lists" / f"{day:%Y%m%d}.json"
     today = dt.datetime.now(dt.timezone(dt.timedelta(hours=9))).date()
-    # 保存済みの一覧を使うのは、確定した過去の日だけ。直近2日分は開示が増えていくので毎回取り直す
-    if p.exists() and (today - day).days >= 2:
+    if use_cache and p.exists() and (today - day).days >= 7:
         return json.loads(p.read_text())
     raw = json.loads(_get(f"https://webapi.yanoshin.jp/webapi/tdnet/list/{day:%Y%m%d}.json?limit=10000"))
     items = [x.get("Tdnet", x) for x in raw.get("items", [])]
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(items, ensure_ascii=False))
+    if use_cache:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(items, ensure_ascii=False))
     time.sleep(1)
     return items
 
