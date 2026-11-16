@@ -8,3 +8,9 @@
 {"kind": "late_start", "cutoff": "2026-11-16T09:13:38.096752+09:00"}
 {"kind": "start", "mode": "paper", "tickers": []}
 {"kind": "stop", "until": "11:35"}
+{"kind": "restored", "state": {"date": "2026-11-16", "entries": 0, "realized": 0.0, "traded_today": [], "halted": false, "halt_reason": "", "last_bar": {}, "open_entries": {}, "errors": 0, "summarized": false}}
+{"kind": "late_start", "cutoff": "2026-11-16T11:05:47.537746+09:00"}
+{"kind": "start", "mode": "paper", "tickers": []}
+{"kind": "summary", "entries": 0, "realized": 0, "halted": false}
+{"kind": "notify", "text": "📒 2026-11-16 仮想 取引 0回 / 損益 +0円"}
+{"kind": "stop", "until": "15:40"}
