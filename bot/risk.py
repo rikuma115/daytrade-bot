@@ -24,6 +24,13 @@ def size(price: float, stop_pct: float, max_loss: int, capital: int) -> int:
 def check(cfg, *, ticker: str, side: int, price: float, stop_pct: float, tm: str,
           state, open_positions: dict, pending: set) -> Decision:
     """新規注文を出してよいか。だめなら理由を返す。"""
+    if getattr(cfg, "research", False):
+        # 研究用: お金の上限はかけず、同じ金額ずつ買う。時間帯と、同じ銘柄の二重注文だけは確認する
+        if not (cfg.entry_start <= tm < cfg.entry_end):
+            return Decision(False, 0, "新規注文の時間外")
+        if ticker in open_positions or ticker in pending or ticker in state.traded_today:
+            return Decision(False, 0, "同じ銘柄を保有中か注文中、または今日すでに売買した")
+        return Decision(True, max(1, int(cfg.research_notional // price)), "研究用")
     if state.halted:
         return Decision(False, 0, f"本日停止中（{state.halt_reason}）")
     if side == -1 and not cfg.allow_short:

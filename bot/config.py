@@ -26,6 +26,9 @@ class Config:
     tm_replays: int
     tickers: list
     min_turnover: float
+    research: bool
+    research_notional: int
+    research_stop: float
     notify_on_trade: bool
     notify_on_summary: bool
     raw: dict = field(repr=False, default_factory=dict)
@@ -45,6 +48,7 @@ def _tickers(v):
 def load(path: str | Path = ROOT / "config.toml") -> Config:
     c = tomllib.loads(Path(path).read_text(encoding="utf-8"))
     m, t, s, tm, u, n = (c.get(k, {}) for k in ("money", "time", "strategy", "timemachine", "universe", "notify"))
+    rs = c.get("research", {})
     cfg = Config(
         mode=c.get("mode", "paper"), account=c.get("account", "cash"),
         capital=int(m["capital"]), max_loss_per_trade=int(m["max_loss_per_trade"]),
@@ -56,6 +60,8 @@ def load(path: str | Path = ROOT / "config.toml") -> Config:
         tm_replays=int(tm.get("replays", 2000)),
         tickers=_tickers(u.get("tickers", "auto")),
         min_turnover=float(u.get("min_turnover", 3e9)),
+        research=bool(rs.get("enabled", False)) and c.get("mode", "paper") == "paper",
+        research_notional=int(rs.get("notional", 100000)), research_stop=float(rs.get("stop", 0.02)),
         notify_on_trade=bool(n.get("on_trade", True)), notify_on_summary=bool(n.get("on_daily_summary", True)),
         raw=c,
     )

@@ -74,7 +74,8 @@ class Engine:
         self.cfg, self.feed, self.broker = cfg, feed, broker
         if cfg.strategy == "picks":
             from bot.picks_strategy import PicksStrategy
-            self.strategy = PicksStrategy(date, cfg.max_loss_per_trade, use_git=state_file is not None)
+            self.strategy = PicksStrategy(date, cfg.max_loss_per_trade, use_git=state_file is not None,
+                                          fixed_stop=cfg.research_stop if cfg.research else None)
         else:
             self.strategy = backtest.STRATEGIES[cfg.strategy](**cfg.strategy_params)
         self.trail = getattr(self.strategy, "trail", None)
@@ -282,18 +283,18 @@ class Engine:
             "date": str(date), "ticker": f.ticker, "side": f.side, "qty": f.qty,
             "entry_time": e["time"], "entry": e["price"], "exit_time": f.time, "exit": f.price,
             "reason": f.reason, "pnl": round(pnl), "ret": round(pnl / (e["price"] * f.qty), 5),
-            "mode": self.cfg.mode, "strategy": self.cfg.strategy,
+            "mode": self.cfg.mode, "strategy": self.cfg.strategy + ("-research" if self.cfg.research else ""),
         })
         if self.cfg.notify_on_trade:
             self.journal.notify(f"決済 {self._label(f.ticker)} {f.reason} {pnl:+,.0f}円"
                                 f"（本日計 {self.state.realized:+,.0f}円）")
-        if self.state.realized <= -self.cfg.daily_loss_limit and not self.state.halted:
+        if self.state.realized <= -self.cfg.daily_loss_limit and not self.state.halted and not self.cfg.research:
             self.halt(f"1日の損失が上限 {self.cfg.daily_loss_limit:,}円 に達した")
 
     def summary(self):
         s = self.state
         self.state.summarized = True
-        text = (f"📒 {s.date} {'仮想' if self.cfg.mode == 'paper' else '本番'} "
+        text = (f"📒 {s.date} {'仮想（研究用・1銘柄10万円分）' if self.cfg.research else '仮想' if self.cfg.mode == 'paper' else '本番'} "
                 f"取引 {s.entries}回 / 損益 {s.realized:+,.0f}円"
                 + (f" / 停止: {s.halt_reason}" if s.halted else ""))
         self.journal.event("summary", entries=s.entries, realized=round(s.realized), halted=s.halted)

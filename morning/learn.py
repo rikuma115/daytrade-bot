@@ -72,6 +72,13 @@ def main():
     K, D = o[o["decision"] == "keep"], o[o["decision"] == "drop"]
     print(f"- 寄り付き後に残した（見直し時刻から終値）: {_stat(K['ret'])}")
     print(f"- 寄り付き後に外した（同上）: {_stat(D['ret'])}")
+    tp = ROOT / "logs" / "paper" / "trades.csv"
+    if tp.exists():
+        t = pd.read_csv(tp)
+        t = t[t["strategy"].astype(str).str.startswith("picks")]
+        if len(t):
+            print(f"- ボットの仮想の売買（残した銘柄・損切りあり・15:20決済）: {_stat(t['ret'])}"
+                  f" / 損切り {int((t['reason'] == '損切り').sum())}回 / 損益合計 {t['pnl'].sum():+,.0f}円")
     print()
     print("## 2. 何が効いているか（件数が10件未満のものは偶然の可能性が高い）")
     if len(L):

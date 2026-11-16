@@ -21,7 +21,8 @@ class PicksStrategy:
     name = "Claudeの注目銘柄"
     trail = None
 
-    def __init__(self, date: str, max_loss: int, use_git: bool = True):
+    def __init__(self, date: str, max_loss: int, use_git: bool = True, fixed_stop: float | None = None):
+        self.fixed_stop = fixed_stop   # 研究用: 決まった幅で損切りする
         self.date = date
         self.max_loss = max_loss
         self.use_git = use_git
@@ -67,6 +68,8 @@ class PicksStrategy:
         if k is None or tm < k["decided_at"]:
             return None
         price = float(ctx["close"][i])
+        if self.fixed_stop:
+            return (1, self.fixed_stop, None)
         # 100株で損切りに掛かったときの損失が上限に収まる幅。1%未満になる（株価が高すぎる）なら買えない
         stop = min(MAX_STOP, self.max_loss / (price * 100) * 0.995)   # 計算の誤差で99株にならないよう少し内側に
         if stop < MIN_STOP:
