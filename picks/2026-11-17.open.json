@@ -1,0 +1,5 @@
+{"date": "2026-11-17", "decided_at": "09:52",
+ "reviews": [
+  {"code": "2334", "name": "Ｇ－イオレ", "decision": "drop", "confidence": 50, "reason": "見える足が1本だけで判断材料が少ない。窓+13%と大きく迷うため外す。"},
+  {"code": "6036", "name": "ＫｅｅＰｅｒ技研", "decision": "drop", "confidence": 65, "reason": "窓+3.7%後に高値から下げ、VWAP割れ。上値が重い。"}
+ ]}
