@@ -90,12 +90,14 @@ class Engine:
 
     # ---------- 状態の保存（途中で落ちても、再起動で続きから動けるように）
     def _load(self):
+        self.restored = False
         if self.state_file and self.state_file.exists():
             d = json.loads(self.state_file.read_text())
             if d["state"]["date"] == self.state.date:
                 self.state = DayState(**d["state"])
                 if hasattr(self.broker, "restore"):
                     self.broker.restore(d.get("broker", {}))
+                self.restored = True
                 self.journal.event("restored", state=d["state"])
 
     def _save(self):
