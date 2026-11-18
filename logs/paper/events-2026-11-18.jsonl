@@ -1,2 +1,7 @@
 {"kind": "start", "mode": "paper", "tickers": []}
 {"kind": "stop", "until": "11:35"}
+{"kind": "restored", "state": {"date": "2026-11-18", "entries": 0, "realized": 0.0, "traded_today": [], "halted": false, "halt_reason": "", "last_bar": {}, "open_entries": {}, "errors": 0, "summarized": false}}
+{"kind": "start", "mode": "paper", "tickers": []}
+{"kind": "summary", "entries": 0, "realized": 0, "halted": false}
+{"kind": "notify", "text": "📒 2026-11-18 仮想（研究用・1銘柄10万円分） 取引 0回 / 損益 +0円"}
+{"kind": "stop", "until": "15:40"}
