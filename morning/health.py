@@ -90,7 +90,7 @@ def main():
             brief = on_main(f"morning/briefs/{d}.md") or ""
             m = re.search(r"開示（前の営業日 15:25 〜 今朝）: (\d+)社", brief)
             n = int(m.group(1)) if m else -1
-            if 0 <= n < 10:
+            if 0 <= n < 3:   # 決算シーズン外は10社前後になるのが普通。0〜2社は不具合を疑う
                 alert(d, "morning-check", f"⚠️ {d} 今朝の開示の候補が{n}社しかありませんでした。資料づくりの不具合の可能性があるので調べます。")
                 print(f"注意: 開示の候補が{n}社")
                 return
