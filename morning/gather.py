@@ -179,7 +179,9 @@ def movers(d: dt.date, cap: int, exclude: set[str]) -> pd.DataFrame:
     m = pd.DataFrame(rows)
     if m.empty:
         return m
-    return m.sort_values("vol_ratio", ascending=False).head(MAX_MOVERS)
+    m = m.sort_values("vol_ratio", ascending=False)
+    # 前日+10%以上の銘柄は、空売りの研究（行き過ぎた上昇の反落）に使うので、上位20社に入らなくても全部載せる
+    return pd.concat([m.head(MAX_MOVERS), m.iloc[MAX_MOVERS:][m.iloc[MAX_MOVERS:]["ret"] >= 0.10]])
 
 
 def _capital() -> int:

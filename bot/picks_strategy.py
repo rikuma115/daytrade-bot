@@ -17,6 +17,12 @@ ROOT = Path(__file__).resolve().parent.parent
 MIN_STOP, MAX_STOP = 0.01, 0.03
 
 
+FADE_PREV = 0.10   # 前日の上昇率がこれ以上
+FADE_GAP = 0.05    # さらに、今日の寄り付きがこれ以上の上昇で始まった
+FADE_STOP = 0.08   # 損切りの幅（空売りなので、売値から8%上がったら買い戻す）
+FADE_LAST = "09:30"  # この時刻までに条件を満たしたものだけ売る
+
+
 class PicksStrategy:
     name = "Claudeの注目銘柄"
     trail = None
@@ -27,6 +33,8 @@ class PicksStrategy:
         self.max_loss = max_loss
         self.use_git = use_git
         self.keep: dict[str, dict] = {}   # ticker -> {decided_at, confidence, reason}
+        self.fade: dict[str, dict] = {}   # 研究用の空売り候補 ticker -> {prev_close, prev_ret}
+        self._fade_loaded = False
 
     # ---------- 見直しの読み込み
     def _read(self) -> dict | None:
@@ -58,13 +66,16 @@ class PicksStrategy:
         通常: 見直しで keep（残す）になった銘柄。
         研究用（fixed_stop あり）: 朝の買い候補を全部（見直しで外した銘柄も、印を付けて買う）。
           見直しが 10:30 までに届かなければ、朝の買い候補をそのまま買う。"""
+        new = []
+        if self.fixed_stop and not self._fade_loaded:
+            new += self._load_fade()
         if self.keep:
-            return []
+            return new
         d = self._read()
         if self.fixed_stop:
             m = self._read_morning() if (d or now_hm >= "10:30") else None
             if not m:
-                return []
+                return new
             decisions = {r["code"]: r for r in (d or {}).get("reviews", [])}
             at = (d or {}).get("decided_at", "10:30")
             for p in m.get("picks", []):
@@ -74,7 +85,7 @@ class PicksStrategy:
                 self.keep[f"{p['code']}.T"] = {"decided_at": at, "decision": r.get("decision", "none"),
                                                "confidence": r.get("confidence", p.get("confidence")),
                                                "reason": r.get("reason", p.get("reason"))}
-            return list(self.keep)
+            return new + list(self.keep)
         if not d:
             return []
         for r in d.get("reviews", []):
@@ -83,14 +94,44 @@ class PicksStrategy:
                                                "confidence": r.get("confidence"), "reason": r.get("reason")}
         return list(self.keep)
 
+    def _load_fade(self) -> list[str]:
+        """朝の資料から、前日に+10%以上上がった銘柄を読む（過去2年の分析で、寄り付きでさらに+5%以上
+        上がって始まった日は、その後下がりやすかった: 9:05に空売りで平均+3.5%、損切り8%込み）。"""
+        rel = f"morning/briefs/{self.date}.candidates.json"
+        text = None
+        if self.use_git:
+            out = subprocess.run(["git", "show", f"origin/main:{rel}"], cwd=ROOT, timeout=30,
+                                 capture_output=True, text=True)
+            text = out.stdout if out.returncode == 0 else None
+        elif (ROOT / rel).exists():
+            text = (ROOT / rel).read_text(encoding="utf-8")
+        if text is None:
+            return []
+        self._fade_loaded = True
+        import re
+        for c in json.loads(text):
+            m = re.search(r"（開示なし）前日 ([+-][0-9.]+)%", c.get("titles", ""))
+            if m and float(m.group(1)) / 100 >= FADE_PREV:
+                self.fade[f"{c['code']}.T"] = {"prev_close": c["prev_close"], "prev_ret": float(m.group(1)) / 100,
+                                               "decision": "fade"}
+        return list(self.fade)
+
     def tickers(self) -> list[str]:
         return list(self.keep)
 
     # ---------- エンジンから呼ばれる部分（backtest.py の戦略と同じ形）
     def prepare(self, day):
-        return {"close": day["Close"].to_numpy(), "times": day.index.strftime("%H:%M")}
+        return {"close": day["Close"].to_numpy(), "times": day.index.strftime("%H:%M"),
+                "open0": float(day["Open"].iloc[0])}
 
     def entry_signal(self, ctx, i, tm, ticker: str | None = None):
+        f = self.fade.get(ticker) if ticker else None
+        if f is not None and ticker not in self.keep:
+            # 寄り付き（今日の最初の足の始値）が前日終値より+5%以上で始まり、まだ9:30前なら空売り
+            if tm > FADE_LAST:
+                return None
+            gap = ctx["open0"] / f["prev_close"] - 1
+            return (-1, FADE_STOP, None) if gap >= FADE_GAP else None
         k = self.keep.get(ticker) if ticker else None
         if k is None or tm < k["decided_at"]:
             return None

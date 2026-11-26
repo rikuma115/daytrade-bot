@@ -80,7 +80,8 @@ def main():
             print(f"- ボットの仮想の売買（損切り2%・15:20決済）: {_stat(t['ret'])}"
                   f" / 損切り {int((t['reason'] == '損切り').sum())}回 / 損益合計 {t['pnl'].sum():+,.0f}円")
             dec = t["strategy"].astype(str).str.split(":").str[1].fillna("")
-            for k, lab in (("keep", "見直しで残した"), ("drop", "見直しで外した"), ("none", "見直しなし")):
+            for k, lab in (("keep", "見直しで残した"), ("drop", "見直しで外した"), ("none", "見直しなし"),
+                           ("fade", "急騰の反落狙い（空売り）")):
                 if (dec == k).any():
                     print(f"  - うち{lab}: {_stat(t[dec == k]['ret'])}")
     print()

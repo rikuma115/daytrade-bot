@@ -148,9 +148,10 @@ class Engine:
             if new:
                 self.tickers += new
                 self.journal.event("picks", tickers=new, detail=self.strategy.keep)
-                mark = {"keep": "残す", "drop": "外す", "none": "見直しなし"}
+                mark = {"keep": "残す", "drop": "外す", "none": "見直しなし", "fade": "急騰の反落狙い・空売り候補"}
+                info = {**getattr(self.strategy, "fade", {}), **self.strategy.keep}
                 self.journal.notify("👀 監視を始めます（研究用）: " + "、".join(
-                    f"{self._label(t)}［{mark.get(self.strategy.keep[t].get('decision'), '')}］" for t in new))
+                    f"{self._label(t)}［{mark.get(info.get(t, {}).get('decision'), '')}］" for t in new))
         for t in self.tickers:
             try:
                 bars = self.feed.bars(t, now)
@@ -287,7 +288,8 @@ class Engine:
             "entry_time": e["time"], "entry": e["price"], "exit_time": f.time, "exit": f.price,
             "reason": f.reason, "pnl": round(pnl), "ret": round(pnl / (e["price"] * f.qty), 5),
             "mode": self.cfg.mode, "strategy": self.cfg.strategy + ("-research" if self.cfg.research else "")
-            + (f":{self.strategy.keep.get(f.ticker, {}).get('decision', '')}" if hasattr(self.strategy, "keep") else ""),
+            + (f":{({**getattr(self.strategy, 'fade', {}), **self.strategy.keep}).get(f.ticker, {}).get('decision', '')}"
+               if hasattr(self.strategy, "keep") else ""),
         })
         if self.cfg.notify_on_trade:
             self.journal.notify(f"決済 {self._label(f.ticker)} {f.reason} {pnl:+,.0f}円"
