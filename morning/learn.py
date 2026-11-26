@@ -77,8 +77,12 @@ def main():
         t = pd.read_csv(tp)
         t = t[t["strategy"].astype(str).str.startswith("picks")]
         if len(t):
-            print(f"- ボットの仮想の売買（残した銘柄・損切りあり・15:20決済）: {_stat(t['ret'])}"
+            print(f"- ボットの仮想の売買（損切り2%・15:20決済）: {_stat(t['ret'])}"
                   f" / 損切り {int((t['reason'] == '損切り').sum())}回 / 損益合計 {t['pnl'].sum():+,.0f}円")
+            dec = t["strategy"].astype(str).str.split(":").str[1].fillna("")
+            for k, lab in (("keep", "見直しで残した"), ("drop", "見直しで外した"), ("none", "見直しなし")):
+                if (dec == k).any():
+                    print(f"  - うち{lab}: {_stat(t[dec == k]['ret'])}")
     print()
     print("## 2. 何が効いているか（件数が10件未満のものは偶然の可能性が高い）")
     if len(L):

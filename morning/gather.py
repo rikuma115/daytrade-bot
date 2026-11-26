@@ -121,6 +121,67 @@ def pdf_head(url: str) -> str:
         return f"（本文を読めませんでした: {type(e).__name__}）"
 
 
+MOVERS = ROOT / "morning" / "movers_universe.tsv"
+MAX_MOVERS = 20
+MIN_PRICE_MOVERS = 200   # 株価が低すぎる銘柄は、1円の動きで1〜2%動いて売買の損が大きいので除く
+
+
+def _movers_universe() -> dict[str, str]:
+    out = {}
+    if MOVERS.exists():
+        for line in MOVERS.read_text(encoding="utf-8").splitlines():
+            if line and not line.startswith("#"):
+                code, name = line.split("\t", 1)
+                out[code] = name
+    return out
+
+
+def _grow_universe(rows):
+    """開示に出てきた銘柄（売買代金の条件を満たしたもの）を、値動きを見る対象に追加していく。"""
+    uni = _movers_universe()
+    new = {r.code: r.name for r in rows.itertuples() if r.code not in uni}
+    if new:
+        with MOVERS.open("a", encoding="utf-8") as f:
+            for code, name in sorted(new.items()):
+                f.write(f"{code}\t{name}\n")
+
+
+def movers(d: dt.date, cap: int, exclude: set[str]) -> pd.DataFrame:
+    """前の営業日に、大きく値上がり・値下がりした銘柄や、出来高が急に増えた銘柄（開示がないもの）。"""
+    import yfinance as yf
+    uni = _movers_universe()
+    codes = [c for c in uni if c not in exclude]
+    if not codes:
+        return pd.DataFrame()
+    px = yf.download([f"{c}.T" for c in codes], period="2mo", interval="1d", progress=False,
+                     auto_adjust=False, group_by="ticker", threads=True)
+    prev = prev_trading_day(d)
+    rows = []
+    for c in codes:
+        t = f"{c}.T"
+        if t not in px.columns.get_level_values(0):
+            continue
+        p = px[t].dropna(subset=["Close", "Volume"])
+        p = p[[i.date() <= prev for i in p.index]]
+        if len(p) < 21 or p.index[-1].date() != prev:
+            continue
+        last, before = p.iloc[-1], p.iloc[-21:-1]
+        avg_vol = before["Volume"].mean()
+        turnover = float((before["Close"] * before["Volume"]).mean())
+        if (avg_vol <= 0 or turnover < MIN_TURNOVER or last["Close"] * 100 > cap
+                or last["Close"] < MIN_PRICE_MOVERS):
+            continue
+        ret = float(last["Close"] / p["Close"].iloc[-2] - 1)
+        vr = float(last["Volume"] / avg_vol)
+        if (abs(ret) >= 0.05 and vr >= 2) or vr >= 4:
+            rows.append({"code": c, "name": uni[c], "ret": ret, "vol_ratio": vr,
+                         "prev_close": float(last["Close"]), "turnover": turnover})
+    m = pd.DataFrame(rows)
+    if m.empty:
+        return m
+    return m.sort_values("vol_ratio", ascending=False).head(MAX_MOVERS)
+
+
 def _capital() -> int:
     import tomllib
     return int(tomllib.loads((ROOT / "config.toml").read_text(encoding="utf-8"))["money"]["capital"])
@@ -147,10 +208,28 @@ def build(d: dt.date, now: dt.datetime) -> Path | None:
              f"## 開示（前の営業日 15:25 〜 今朝）: {len(cands)}社",
              f"条件: 100株を{cap / 10000:.0f}万円以内で買える / 過去20日の平均売買代金 {MIN_TURNOVER / 1e4:,.0f}万円以上。売買代金の多い順",
              "形式: コード 社名 | 前日終値（100株の金額）| 平均売買代金 | 開示の題名", ""]
+    mv = pd.DataFrame()
+    try:
+        if len(cands):
+            _grow_universe(cands)
+        mv = movers(d, cap, set(cands["code"]) if len(cands) else set())
+    except Exception as e:  # noqa: BLE001
+        print(f"前日に動いた銘柄を取得できませんでした: {type(e).__name__}")
     for r in cands.itertuples():
         titles = r.titles if len(r.titles) <= 140 else r.titles[:140] + "…"
         lines.append(f"- {r.code} {r.name} | {r.prev_close:,.0f}円（{r.prev_close * 100 / 10000:,.1f}万円）"
                      f" | {r.turnover / 1e8:,.1f}億円 | {titles}")
+    lines += ["", f"## 前日に大きく動いた銘柄（開示なし）: {len(mv)}社",
+              "条件: 前日の値動き±5%以上かつ出来高が20日平均の2倍以上、または出来高4倍以上。出来高倍率の大きい順",
+              "形式: コード 社名 | 前日終値（100株の金額）| 前日の値動き・出来高倍率 | 平均売買代金", ""]
+    for r in mv.itertuples():
+        lines.append(f"- {r.code} {r.name} | {r.prev_close:,.0f}円（{r.prev_close * 100 / 10000:,.1f}万円）"
+                     f" | 前日 {r.ret * 100:+.1f}%・出来高{r.vol_ratio:.1f}倍 | {r.turnover / 1e8:,.1f}億円")
+    if len(mv):
+        mv = mv.assign(titles=[f"（開示なし）前日 {x * 100:+.1f}%・出来高{v:.1f}倍" for x, v in zip(mv["ret"], mv["vol_ratio"])],
+                       pubdate="", urls=[[] for _ in range(len(mv))])
+        cands = pd.concat([cands, mv[["code", "name", "titles", "urls", "pubdate", "prev_close", "turnover"]]],
+                          ignore_index=True)
     BRIEFS.mkdir(parents=True, exist_ok=True)
     path = BRIEFS / f"{d}.md"
     path.write_text("\n".join(lines), encoding="utf-8")
@@ -158,7 +237,7 @@ def build(d: dt.date, now: dt.datetime) -> Path | None:
         cands.drop(columns=["urls"]).to_json(orient="records", force_ascii=False), encoding="utf-8")
     (BRIEFS / f"{d}.urls.json").write_text(
         json.dumps(dict(zip(cands["code"], cands["urls"])) if len(cands) else {}, ensure_ascii=False), encoding="utf-8")
-    print(f"資料①: {path}（{len(cands)}社、{len(path.read_text()) / 1000:.0f}千文字）")
+    print(f"資料①: {path}（開示 {len(cands) - len(mv)}社＋前日に動いた {len(mv)}社、{len(path.read_text()) / 1000:.0f}千文字）")
     return path
 
 
@@ -179,6 +258,8 @@ def detail(d: dt.date, codes: list[str]) -> Path:
             (k for k, w in enumerate(DOC_PRIORITY) if w in titles[i]), len(DOC_PRIORITY)) if i < len(titles) else 99)
         lines += [f"## {code} {c['name']}", f"- 開示: {c['titles']}（{c['pubdate']}）",
                   f"- 前日終値 {c['prev_close']:,.1f}円 / 平均売買代金 {c['turnover'] / 1e8:,.1f}億円"]
+        if not us:
+            lines.append("- 開示なし（前日の値動きで候補になった銘柄）。理由はニュースで確認する")
         for i in order[:2]:
             lines.append(f"- 本文（{titles[i] if i < len(titles) else ''}）: {pdf_head(us[i])}")
         lines.append("")

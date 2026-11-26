@@ -43,16 +43,43 @@ class PicksStrategy:
         p = ROOT / rel
         return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
 
-    def refresh(self) -> list[str]:
-        """新しく「残す」になった銘柄を返す。"""
+    def _read_morning(self) -> dict | None:
+        rel = f"picks/{self.date}.json"
+        if self.use_git:
+            out = subprocess.run(["git", "show", f"origin/main:{rel}"], cwd=ROOT, timeout=30,
+                                 capture_output=True, text=True)
+            if out.returncode == 0:
+                return json.loads(out.stdout)
+        p = ROOT / rel
+        return json.loads(p.read_text(encoding="utf-8")) if p.exists() else None
+
+    def refresh(self, now_hm: str = "") -> list[str]:
+        """新しく売買の対象になった銘柄を返す。
+        通常: 見直しで keep（残す）になった銘柄。
+        研究用（fixed_stop あり）: 朝の買い候補を全部（見直しで外した銘柄も、印を付けて買う）。
+          見直しが 10:30 までに届かなければ、朝の買い候補をそのまま買う。"""
         if self.keep:
             return []
         d = self._read()
+        if self.fixed_stop:
+            m = self._read_morning() if (d or now_hm >= "10:30") else None
+            if not m:
+                return []
+            decisions = {r["code"]: r for r in (d or {}).get("reviews", [])}
+            at = (d or {}).get("decided_at", "10:30")
+            for p in m.get("picks", []):
+                if p.get("action") != "long":
+                    continue
+                r = decisions.get(p["code"], {})
+                self.keep[f"{p['code']}.T"] = {"decided_at": at, "decision": r.get("decision", "none"),
+                                               "confidence": r.get("confidence", p.get("confidence")),
+                                               "reason": r.get("reason", p.get("reason"))}
+            return list(self.keep)
         if not d:
             return []
         for r in d.get("reviews", []):
             if r.get("decision") == "keep":
-                self.keep[f"{r['code']}.T"] = {"decided_at": d.get("decided_at", "09:52"),
+                self.keep[f"{r['code']}.T"] = {"decided_at": d.get("decided_at", "09:52"), "decision": "keep",
                                                "confidence": r.get("confidence"), "reason": r.get("reason")}
         return list(self.keep)
 
