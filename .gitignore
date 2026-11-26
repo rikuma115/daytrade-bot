@@ -4,3 +4,4 @@ __pycache__/
 experiments/exp2_data/pdf/
 state/*.tmp
 logs/replay/
+experiments/history/
