@@ -57,7 +57,7 @@
 
 5. 保存する（GitHub に送ると、スマホに通知が届く）。
    ```bash
-   git add picks morning/briefs
+   git add picks morning/briefs morning/movers_universe.tsv
    git commit -m "朝の注目銘柄 <今日の日付>"
    git pull --rebase -q origin main && git push -q origin main
    ```
