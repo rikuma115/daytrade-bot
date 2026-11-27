@@ -1,0 +1,9 @@
+{"kind": "start", "mode": "paper", "tickers": []}
+{"kind": "picks", "tickers": ["6727.T", "3678.T"], "detail": {}}
+{"kind": "notify", "text": "👀 監視を始めます（研究用）: 6727［急騰の反落狙い・空売り候補］、3678［急騰の反落狙い・空売り候補］"}
+{"kind": "picks", "tickers": ["3993.T"], "detail": {"3993.T": {"decided_at": "09:53 JST", "decision": "drop", "confidence": 62, "reason": "窓+5%の寄り天で高値から下落、VWAPの下で戻りが弱い"}}}
+{"kind": "notify", "text": "👀 監視を始めます（研究用）: 3993［外す］"}
+{"kind": "order", "ticker": "3993.T", "time": "09:55", "side": 1, "price": 2732.0, "stop_pct": 0.02, "qty": 36, "odds": null}
+{"kind": "fill", "fill": {"ticker": "3993.T", "kind": "entry", "side": 1, "qty": 36, "price": 2733.0, "time": "10:00", "reason": "新規"}}
+{"kind": "notify", "text": "買い 3993 36株 @2,733.0（10:00）"}
+{"kind": "stop", "until": "11:35"}
