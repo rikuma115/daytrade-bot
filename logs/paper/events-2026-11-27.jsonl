@@ -7,3 +7,14 @@
 {"kind": "fill", "fill": {"ticker": "3993.T", "kind": "entry", "side": 1, "qty": 36, "price": 2733.0, "time": "10:00", "reason": "新規"}}
 {"kind": "notify", "text": "買い 3993 36株 @2,733.0（10:00）"}
 {"kind": "stop", "until": "11:35"}
+{"kind": "restored", "state": {"date": "2026-11-27", "entries": 1, "realized": 0.0, "traded_today": ["3993.T"], "halted": false, "halt_reason": "", "last_bar": {"6727.T": "2026-11-27T11:10:00+09:00", "3678.T": "2026-11-27T11:10:00+09:00", "3993.T": "2026-11-27T11:10:00+09:00"}, "open_entries": {"3993.T": {"price": 2733.0, "time": "10:00", "qty": 36, "side": 1}}, "errors": 0, "summarized": false}}
+{"kind": "start", "mode": "paper", "tickers": []}
+{"kind": "picks", "tickers": ["6727.T", "3678.T", "3993.T"], "detail": {"3993.T": {"decided_at": "09:53 JST", "decision": "drop", "confidence": 62, "reason": "窓+5%の寄り天で高値から下落、VWAPの下で戻りが弱い"}}}
+{"kind": "notify", "text": "👀 監視を始めます（研究用）: 6727［急騰の反落狙い・空売り候補］、3678［急騰の反落狙い・空売り候補］、3993［外す］"}
+{"kind": "fill", "fill": {"ticker": "3993.T", "kind": "exit", "side": 1, "qty": 36, "price": 2819.0, "time": "15:05", "reason": "大引け前決済"}, "pnl": 2996}
+{"kind": "notify", "text": "決済 3993 大引け前決済 +2,996円（本日計 +2,996円）"}
+{"kind": "skip", "ticker": "3993.T", "time": "15:10", "side": 1, "price": 2815.0, "stop_pct": 0.02, "reason": "新規注文の時間外"}
+{"kind": "skip", "ticker": "3993.T", "time": "15:15", "side": 1, "price": 2815.0, "stop_pct": 0.02, "reason": "新規注文の時間外"}
+{"kind": "summary", "entries": 1, "realized": 2996, "halted": false}
+{"kind": "notify", "text": "📒 2026-11-27 仮想（研究用・1銘柄10万円分） 取引 1回 / 損益 +2,996円"}
+{"kind": "stop", "until": "15:40"}
